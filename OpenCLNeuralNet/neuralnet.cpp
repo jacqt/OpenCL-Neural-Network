@@ -2,15 +2,15 @@
 
 std::string getFileContents(const char* fileName)
 {
-	std::ifstream in(fileName, std::ios::in | std::ios::binary);
-	if (in)
-		return(std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>()));
-	throw(errno);
+    std::ifstream in(fileName, std::ios::in | std::ios::binary);
+    if (in)
+        return(std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>()));
+    throw(errno);
 }
 
 //Create the neural net as a vector of layers
 void createNeuralNet( 
-	vector<cl_int> &netSpec,
+    vector<cl_int> &netSpec,
     vector<Layer> &layers)
 {
     //Create the input layer
@@ -19,17 +19,17 @@ void createNeuralNet(
 
     //Create the rest of the layers
     for (unsigned int i = 1; i != netSpec.size(); ++i)
-	{
-		Layer layer = layer_new(netSpec[i],netSpec[i-1]);
-		layers.push_back(layer);
+    {
+        Layer layer = layer_new(netSpec[i],netSpec[i-1]);
+        layers.push_back(layer);
     }
 }
 
 //Loads a neural net from a file
 void loadNeuralNetFromFile(
-	std::string netFileName,
-	vector<cl_int> &netSpec,
-	vector<Layer> &layers)
+    std::string netFileName,
+    vector<cl_int> &netSpec,
+    vector<Layer> &layers)
 {
     //first parse the data
     std::ifstream netFile ("C:/cpp/cppNeuralNet/neuralNet.net", std::ios::in | std::ios::binary);
@@ -66,15 +66,15 @@ void loadNeuralNetFromFile(
     //Create the rest of the layers
     int w = 0;
     for (unsigned int i = 1; i != netSpec.size(); ++i)
-	{
-		Layer layer = layer_new(netSpec[i],netSpec[i-1]);
-		for (int j = 0; j != layer.numberOfNodes; ++j)
-		{
-			for (int k = 0; k != layer.nodes[j].numberOfWeights; ++k)
+    {
+        Layer layer = layer_new(netSpec[i],netSpec[i-1]);
+        for (int j = 0; j != layer.numberOfNodes; ++j)
+        {
+            for (int k = 0; k != layer.nodes[j].numberOfWeights; ++k)
                 layer.nodes[j].weights[k] = weightVector[w][k];
             ++w;
         }
-		layers.push_back(layer);
+        layers.push_back(layer);
     }
 }
 
@@ -92,13 +92,13 @@ int getSizeOfNet(vector <Layer> &layers)
 //Computes the output of the net given an array of inputs
 void computeOutput(
     cl::Context *context,
-	cl_float *inputs,
+    cl_float *inputs,
     vector<int> *netSpec,
     vector<Layer> *layers,
     cl::Program *program,
-	cl::Buffer *netSpecBuffer,
-	cl::Buffer *layersBuffer,
-	cl::CommandQueue *queue)
+    cl::Buffer *netSpecBuffer,
+    cl::Buffer *layersBuffer,
+    cl::CommandQueue *queue)
 {
     //First set the inputs
     size_t sizeOfInput = sizeof(cl_int)*(*netSpec)[0];
@@ -109,30 +109,30 @@ void computeOutput(
     setInputKernel = cl::Kernel(*program, "setInputs");
     setInputKernel.setArg(0,*layersBuffer);
     setInputKernel.setArg(1,inputBuffer);
-	(*queue).enqueueNDRangeKernel(setInputKernel,cl::NullRange, cl::NDRange((*netSpec)[0]), cl::NullRange);
+    (*queue).enqueueNDRangeKernel(setInputKernel,cl::NullRange, cl::NDRange((*netSpec)[0]), cl::NullRange);
 
     //Now compute the output
-	unsigned int offset = 0;
+    unsigned int offset = 0;
     cl::Kernel kernel;
     kernel = cl::Kernel(*program, "computeLayerOutput");
     kernel.setArg(0, *layersBuffer);
     kernel.setArg(1, *netSpecBuffer);
-	for (unsigned int i = 1; i != (*netSpec).size(); ++i)
-	{
-		(*queue).enqueueNDRangeKernel(kernel, cl::NDRange(offset), cl::NDRange((*netSpec)[i]), cl::NullRange);
-		offset += (*netSpec)[i];
-	}
+    for (unsigned int i = 1; i != (*netSpec).size(); ++i)
+    {
+        (*queue).enqueueNDRangeKernel(kernel, cl::NDRange(offset), cl::NDRange((*netSpec)[i]), cl::NullRange);
+        offset += (*netSpec)[i];
+    }
 }
 
 void calculateError(
     cl::Context *context,
-	vector<std::tuple<float*,int*> > *trainingData,
+    vector<std::tuple<float*,int*> > *trainingData,
     vector<int> *netSpec,
     vector<Layer> *layers,
     cl::Program *program,
-	cl::Buffer *netSpecBuffer,
-	cl::Buffer *layersBuffer,
-	cl::CommandQueue *queue)
+    cl::Buffer *netSpecBuffer,
+    cl::Buffer *layersBuffer,
+    cl::CommandQueue *queue)
 {
     //Training once over all the data samples
     float errors = 0;
@@ -151,13 +151,13 @@ void calculateError(
         Layer *layerArray = new Layer[(*netSpec).size()];
         (*queue).enqueueReadBuffer((*layersBuffer), CL_TRUE,0,sizeOfNet,layerArray);
         int lastLayerIndex = (*netSpec).size()-1;
-		float output = layerArray[lastLayerIndex].nodes[layerArray[lastLayerIndex].numberOfNodes-1].output;
+        float output = layerArray[lastLayerIndex].nodes[layerArray[lastLayerIndex].numberOfNodes-1].output;
 
         //Calculate if it is an error or not
         int target = targetVector[0];
         if (output > 0.5 && target == 0)
             errors += 1;
-		else if (output < 0.5 && target == 1)
+        else if (output < 0.5 && target == 1)
             errors += 1;
 
         ++i;
@@ -170,14 +170,14 @@ void calculateError(
 //  and target vector
 void trainNeuralNet(
     cl::Context *context,
-	vector<std::tuple<float*,int*> > *trainingData,
+    vector<std::tuple<float*,int*> > *trainingData,
     vector<int> *netSpec,
     vector<Layer> *layers,
     cl::Program *program,
-	cl::Buffer *netSpecBuffer,
-	cl::Buffer *layersBuffer,
-	cl::CommandQueue *queue,
-	int trainingIterations)
+    cl::Buffer *netSpecBuffer,
+    cl::Buffer *layersBuffer,
+    cl::CommandQueue *queue,
+    int trainingIterations)
 {
     //Create the kernel to compute the deltas and apply the weight changes for the rest of the layers
     cl::Kernel calcLayerDeltas;
@@ -202,7 +202,7 @@ void trainNeuralNet(
 
     //Training once over all the data samples
     for (int c = 0; c != trainingIterations; ++c)
-	{
+    {
         if (c%10 == 0)
             calculateError(context, trainingData, netSpec, layers, program, netSpecBuffer, layersBuffer, queue);
 
@@ -222,7 +222,7 @@ void trainNeuralNet(
             
             //Queue the writebuffer
             (*queue).enqueueWriteBuffer(targetBuffer,CL_TRUE,0,sizeOfTarget,&targetVector[0]);
-			(*queue).enqueueReadBuffer(targetBuffer,CL_TRUE,0,sizeOfTarget,targetVector);
+            (*queue).enqueueReadBuffer(targetBuffer,CL_TRUE,0,sizeOfTarget,targetVector);
 
             //Queue the kernel
             (*queue).enqueueNDRangeKernel(calcOutputLayerDeltas, cl::NDRange(offset), cl::NDRange((*netSpec)[lastLayerIndex]), cl::NullRange);
