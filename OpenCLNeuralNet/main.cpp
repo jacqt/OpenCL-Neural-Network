@@ -45,21 +45,12 @@ int main()
     program = createProgram(context, "neuralnet.cl");
 
     //Create the neural network as a vector of layers
-    cl_int netSpecArray[] = {2, 50, 30, 1};//We include the input layer in the netSpec, which means that we will have to perform some offsets
+    cl_int netSpecArray[] = {2, 50, 100, 100, 1};//We include the input layer in the netSpec, which means that we will have to perform some offsets
     vector<cl_int> netSpec (netSpecArray, netSpecArray + sizeof(netSpecArray)/sizeof(int)); 
-    //vector<cl_int> netSpec;
-    vector<Layer> layers;
-    createNeuralNet(netSpec,layers);
-    //loadNeuralNetFromFile("neuralNet.net",netSpec,layers);
 
-    size_t sizeOfNet = getSizeOfNet(layers);
-
-    //Create memory buffers
-    cl::Buffer netSpecBuffer = cl::Buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-        sizeof(cl_int)*netSpec.size(), &netSpec[0]);
-
-    cl::Buffer layersBuffer  = cl::Buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-        sizeOfNet, &layers[0]);
+    NeuralNet myNet;
+    myNet.createNeuralNet(netSpec);
+    myNet.createMemoryBuffers(context);
 
     //Create the command queue from the first device in context
     cl::CommandQueue queue;
@@ -67,11 +58,11 @@ int main()
 
     //Test it
     vector<std::tuple<float*, int*> > testData = getTestData();
-    calculateError(&context, &testData, &netSpec, &layers, &program, &netSpecBuffer, &layersBuffer, &queue);
+    myNet.calculateError(&context, &testData, &program, &queue);
 
-    //OKAY NOW TRAIN IT!
+    //Ok, now train the neural net
     int trainingIterations = 100;
-    trainNeuralNet(&context, &testData, &netSpec, &layers, &program, &netSpecBuffer, &layersBuffer, &queue, trainingIterations);
+    myNet.trainNeuralNet(&context, &testData, &program, &queue, trainingIterations);
 
     cout << "Finished!" << endl;
 

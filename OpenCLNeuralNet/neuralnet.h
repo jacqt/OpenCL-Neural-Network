@@ -19,55 +19,57 @@ using std::string;
 //Reads a file
 std::string getFileContents(const char* fileName);
 
-//Create the neural net as a vector of layers
-void createNeuralNet( 
-    vector<cl_int> &netSpec,
-    vector<Layer> &layers);
 
-//Loads a net from a file
-void loadNeuralNetFromFile(
-    std::string netFileName,
-    vector<cl_int> &netSpec,
-    vector<Layer> &layers);
+class NeuralNet
+{
+public:
+    vector<cl_int> netSpec;
+    vector<Layer> layers;
+    cl::Buffer netSpecBuffer;
+    cl::Buffer layersBuffer;
+    cl::Buffer inputBuffer;
+    cl::Buffer targetBuffer;
 
-//Returns how large the net is in temrs of bytes
-int getSizeOfNet(vector <Layer> &layers);
+    //Create the neural net as a vector of layers
+    void createNeuralNet(vector<cl_int> &netSpec);
 
+    //Loads a net from a file
+    void loadNeuralNetFromFile(std::string netFileName);
 
-//Computese the output of the neural net
-void computeOutput(
-    cl::Context *context,
-    cl_float *inputs,
-    vector<int> *netSpec,
-    vector<Layer> *layers,
-    cl::Program *program,
-    cl::Buffer *netSpecBuffer,
-    cl::Buffer *layersBuffer,
-    cl::CommandQueue *queue);
+    //Creates the memory buffers for the neural net
+    void createMemoryBuffers(cl::Context &context);
 
-//Given test data, calculates the error rate of the neural net
-void calculateError(
-    cl::Context *context,
-    vector<std::tuple<float*,int*> > *trainingData,
-    vector<int> *netSpec,
-    vector<Layer> *layers,
-    cl::Program *program,
-    cl::Buffer *netSpecBuffer,
-    cl::Buffer *layersBuffer,
-    cl::CommandQueue *queue);
+    //Returns how large the net is in temrs of bytes
+    int getSizeOfNet();
 
-//Trains the neural net given a vector of tuples containing the feature vector
-//  and target vector
-void trainNeuralNet(
-    cl::Context *context,
-    vector<std::tuple<float*, int*> > *trainingData,
-    vector<int> *netSpec,
-    vector<Layer> *layers,
-    cl::Program *program,
-    cl::Buffer *netSpecBuffer,
-    cl::Buffer *layersBuffer,
-    cl::CommandQueue *queue,
-    int trainingIterations);
+    //Computese the output of the neural net
+    void computeOutput(
+        cl::Context *context,
+        cl_float *inputs,
+        cl::Program *program,
+        cl::CommandQueue *queue);
+
+    //Given test data, calculates the error rate of the neural net
+    void calculateError(
+        cl::Context *context,
+        vector<std::tuple<float*,int*> > *trainingData,
+        cl::Program *program,
+        cl::CommandQueue *queue);
+
+    //Trains the neural net given a vector of tuples containing the feature vector
+    //  and target vector
+    void trainNeuralNet(
+        cl::Context *context,
+        vector<std::tuple<float*, int*> > *trainingData,
+        cl::Program *program,
+        cl::CommandQueue *queue,
+        int trainingIterations);
+
+private:
+    size_t sizeOfNet;
+    size_t sizeOfInput;
+    size_t sizeOfTarget;
+};
 
 //Gets some test data
 vector<std::tuple<float*, int*> > getTestData ();
