@@ -1,2 +1,4 @@
-This project is currently a basic, unoptimized OpenCL implementation 
+This project is currently a basic, fairly optimized OpenCl implementation
 of a fully connected feed forward network.
+
+Ability to store and load neural nets from files
