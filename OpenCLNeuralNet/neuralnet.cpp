@@ -24,14 +24,51 @@ void NeuralNet::createNeuralNet(vector<cl_int> &newNetSpec)
     }
 }
 
-void NeuralNet::createMemoryBuffers(cl::Context &context)
+void NeuralNet::writeNeuralNetToFile(cl::CommandQueue &queue)
+{
+    //Implement a persistent method to store the neural net
+    std::ofstream netFile;
+    netFile.open("NeuralNetStructure.net");
+
+    /*File format:
+     * N_INPUTS N_NODES_0 N_NODES_1 ... 
+     * WEIGHT1 WEIGHT2 ...
+     * WEIGHT1 WEIGHT2 ...
+     * etc.
+     */
+
+    netFile << netSpec[0];
+    for (unsigned int i = 1; i != netSpec.size(); ++i)
+        netFile << " " << netSpec[i];
+    netFile << endl;
+
+    //Get the weights from the GPU
+    Layer *layerArray = new Layer[netSpec.size()];
+    queue.enqueueReadBuffer(layersBuffer, CL_TRUE,0,sizeOfNet,layerArray);
+
+    for (unsigned int i = 1; i != netSpec.size(); ++i)
+    {
+        for (unsigned int j = 0; j != layerArray[i].numberOfNodes; ++j)
+        {
+            netFile << layerArray[i].nodes[j].weights[0] << " ";
+            for (unsigned int w = 1; w != layerArray[i].nodes[j].numberOfWeights; ++w)
+            {
+                cout << w << endl;
+                netFile << layerArray[i].nodes[j].weights[w] << " ";
+            }
+            netFile << endl;
+        }
+    }
+}
+
+void NeuralNet::createMemoryBuffersAndKernels(cl::Context &context, cl::Program &program)
 {
     sizeOfNet = getSizeOfNet();
     sizeOfInput = sizeof(cl_int)*netSpec[0];
     sizeOfTarget = sizeof(cl_int)*netSpec[netSpec.size()-1]; 
 
     //Create memory buffers
-    netSpecBuffer = cl::Buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+    netSpecBuffer = cl::Buffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
         sizeof(cl_int)*netSpec.size(), &netSpec[0]);
 
     layersBuffer  = cl::Buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
@@ -40,6 +77,36 @@ void NeuralNet::createMemoryBuffers(cl::Context &context)
     inputBuffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeOfInput);
 
     targetBuffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeOfTarget);
+
+    //Create input kernels
+    setInputKernel = cl::Kernel(program, "setInputs");
+    setInputKernel.setArg(0,layersBuffer);
+    setInputKernel.setArg(1,inputBuffer);
+
+    //Create computet output kernels
+    computeOutputRolled = cl::Kernel(program, "computeLayerOutput_Rolled");
+    computeOutputRolled.setArg(0, layersBuffer);
+    computeOutputRolled.setArg(1, netSpecBuffer);
+
+    computeOutputUnrolled = cl::Kernel(program, "computeLayerOutput_Unrolled");
+    computeOutputUnrolled.setArg(0, layersBuffer);
+    computeOutputUnrolled.setArg(1, netSpecBuffer);
+
+    //Create the kernel to compute the deltas and apply the weight changes for the rest of the layers
+    calcLayerDeltasRolled = cl::Kernel(program, "computeDelta_ApplyWeightChange_Rolled");
+    calcLayerDeltasRolled.setArg(0,layersBuffer);
+    calcLayerDeltasRolled.setArg(1,netSpecBuffer);
+
+    calcLayerDeltasUnrolled= cl::Kernel(program, "computeDelta_ApplyWeightChange_Unrolled");
+    calcLayerDeltasUnrolled.setArg(0,layersBuffer);
+    calcLayerDeltasUnrolled.setArg(1,netSpecBuffer);
+
+    //Now create the kernel to calculate the deltas in the output layer and apply the appropriate weight changes
+    calcOutputLayerDeltas = cl::Kernel(program, "computeDelta_ApplyWeightChange_OutputNode");
+    calcOutputLayerDeltas.setArg(0, layersBuffer);
+    calcOutputLayerDeltas.setArg(1, netSpecBuffer);
+    calcOutputLayerDeltas.setArg(2, targetBuffer);
+
 }
 
 //Loads a neural net from a file
@@ -110,23 +177,19 @@ void NeuralNet::computeOutput(
     cl::Program *program,
     cl::CommandQueue *queue)
 {
-    cl::Kernel setInputKernel;
-    setInputKernel = cl::Kernel(*program, "setInputs");
-    setInputKernel.setArg(0,layersBuffer);
-    setInputKernel.setArg(1,inputBuffer);
 
     (*queue).enqueueWriteBuffer(inputBuffer, CL_TRUE, 0, sizeOfInput, inputs);
     (*queue).enqueueNDRangeKernel(setInputKernel,cl::NullRange, cl::NDRange(netSpec[0]), cl::NullRange);
 
     //Now compute the output
     unsigned int offset = 0;
-    cl::Kernel kernel;
-    kernel = cl::Kernel(*program, "computeLayerOutput");
-    kernel.setArg(0, layersBuffer);
-    kernel.setArg(1, netSpecBuffer);
+
     for (unsigned int i = 1; i != netSpec.size(); ++i)
     {
-        (*queue).enqueueNDRangeKernel(kernel, cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
+        if (layers[i].nodes[0].numberOfWeights % 5 == 0)
+            (*queue).enqueueNDRangeKernel(computeOutputUnrolled, cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
+        else
+            (*queue).enqueueNDRangeKernel(computeOutputRolled, cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
         offset += netSpec[i];
     }
 }
@@ -176,21 +239,8 @@ void NeuralNet::trainNeuralNet(
     cl::CommandQueue *queue,
     int trainingIterations)
 {
-    //Create the kernel to compute the deltas and apply the weight changes for the rest of the layers
-    cl::Kernel calcLayerDeltas;
-    calcLayerDeltas = cl::Kernel(*program, "computeDelta_ApplyWeightChange");
-    calcLayerDeltas.setArg(0,layersBuffer);
-    calcLayerDeltas.setArg(1,netSpecBuffer);
-
     int lastLayerIndex = netSpec.size()-1;
     int *targetVector = std::get<1>((*trainingData)[0]);
-
-    //Now create the kernel to calculate the deltas in the output layer and apply the appropriate weight changes
-    cl::Kernel calcOutputLayerDeltas;
-    calcOutputLayerDeltas = cl::Kernel(*program, "computeDelta_ApplyWeightChange_OutputNode");
-    calcOutputLayerDeltas.setArg(0, layersBuffer);
-    calcOutputLayerDeltas.setArg(1, netSpecBuffer);
-    calcOutputLayerDeltas.setArg(2, targetBuffer);
 
     for (int c = 0; c != trainingIterations; ++c)
     {
@@ -226,12 +276,14 @@ void NeuralNet::trainNeuralNet(
                 cl_ulong submit;
                 cl_ulong start;
                 cl_ulong end;
-                */
                 cl::Event event;
+                */
                 offset += -netSpec[i];
-                (*queue).enqueueNDRangeKernel(calcLayerDeltas, cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange,NULL,&event);
-                (*queue).flush();
-                event.wait();
+                if (layers[i+1].numberOfNodes % 5 == 0 && layers[i].nodes[0].numberOfWeights % 5 == 0)
+                    (*queue).enqueueNDRangeKernel(calcLayerDeltasUnrolled, cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
+                else
+                    (*queue).enqueueNDRangeKernel(calcLayerDeltasRolled, cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
+
                 /*
                 event.getProfilingInfo<cl_ulong>(CL_PROFILING_COMMAND_SUBMIT, &submit);
                 event.getProfilingInfo<cl_ulong>(CL_PROFILING_COMMAND_START, &start);

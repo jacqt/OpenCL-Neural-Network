@@ -1,9 +1,13 @@
-#define MAXSIZE 150
+#define MAXSIZE 200
+//Define a maxsize because pointers are not allowed to be passed to the kernel
+//Note that this number _must_ be the same as the MAXSIZE defined under neuralnet.cl
 
+//We define a layer struct along with node struct because we want to pass these structs to the
+//kernel running on the GPU which does not support C++ types
 typedef struct Node
 {
     int numberOfWeights;
-    float weights[MAXSIZE];
+    float weights[MAXSIZE]; 
     float output;
     float input;
     float delta;

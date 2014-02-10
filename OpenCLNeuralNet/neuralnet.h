@@ -36,8 +36,11 @@ public:
     //Loads a net from a file
     void loadNeuralNetFromFile(std::string netFileName);
 
-    //Creates the memory buffers for the neural net
-    void createMemoryBuffers(cl::Context &context);
+    //Writes a net to a local file
+	void writeNeuralNetToFile(cl::CommandQueue &queue);
+
+    //Creates the memory buffers for the neural net and kernels
+	void createMemoryBuffersAndKernels(cl::Context &context, cl::Program &program);
 
     //Returns how large the net is in temrs of bytes
     int getSizeOfNet();
@@ -69,6 +72,12 @@ private:
     size_t sizeOfNet;
     size_t sizeOfInput;
     size_t sizeOfTarget;
+    cl::Kernel setInputKernel;
+    cl::Kernel computeOutputRolled;
+    cl::Kernel computeOutputUnrolled;
+    cl::Kernel calcLayerDeltasRolled;
+    cl::Kernel calcLayerDeltasUnrolled;
+    cl::Kernel calcOutputLayerDeltas;
 };
 
 //Gets some test data
