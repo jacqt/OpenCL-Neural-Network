@@ -52,13 +52,11 @@ void NeuralNet::writeNeuralNetToFile(cl::CommandQueue &queue)
         {
             netFile << layerArray[i].nodes[j].weights[0] << " ";
             for (unsigned int w = 1; w != layerArray[i].nodes[j].numberOfWeights; ++w)
-            {
-                cout << w << endl;
                 netFile << layerArray[i].nodes[j].weights[w] << " ";
-            }
             netFile << endl;
         }
     }
+    netFile.close();
 }
 
 void NeuralNet::createMemoryBuffersAndKernels(cl::Context &context, cl::Program &program)

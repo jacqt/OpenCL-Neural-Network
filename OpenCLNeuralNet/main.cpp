@@ -50,7 +50,7 @@ int main()
     queue = cl::CommandQueue(context, context.getInfo<CL_CONTEXT_DEVICES>()[0], CL_QUEUE_PROFILING_ENABLE);
 
     //Create the neural network as a vector of layers
-    cl_int netSpecArray[] = {2, 50, 100, 1};//We include the input layer in the netSpec, which means that we will have to perform some offsets
+    cl_int netSpecArray[] = {2, 100, 100, 100, 100, 1};//We include the input layer in the netSpec, which means that we will have to perform some offsets
     vector<cl_int> netSpec (netSpecArray, netSpecArray + sizeof(netSpecArray)/sizeof(int)); 
     NeuralNet myNet;
     myNet.createNeuralNet(netSpec);
@@ -61,7 +61,7 @@ int main()
     vector<std::tuple<float*, int*> > testData = getTestData();
 
     //Ok, now train the neural net
-    int trainingIterations = 5;
+    int trainingIterations = 20;
     myNet.trainNeuralNet(&context, &testData, &program, &queue, trainingIterations);
 
     myNet.calculateError(&context, &testData, &program, &queue);
