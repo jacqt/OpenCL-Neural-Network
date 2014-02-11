@@ -3,8 +3,6 @@
 #include "include.h"
 #include "layer.h"
 
-#define __CL_ENABLE_EXCEPTIONS
-
 //Class describing a fully connected neural net
 class FullyConnectedNeuralNet
 {
