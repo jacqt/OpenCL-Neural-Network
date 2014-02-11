@@ -155,19 +155,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="convolutionalneuralnet.cpp" />
     <ClCompile Include="layer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="fullyconnectedneuralnet.cpp" />
     <ClCompile Include="neuralnet.cpp" />
+    <ClCompile Include="training.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Intel_OpenCL_Build_Rules Include="neuralnet.cl" />
+    <Intel_OpenCL_Build_Rules Include="convolutionalneuralnet.cl" />
+    <Intel_OpenCL_Build_Rules Include="fullyconnectedneuralnet.cl" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="convolutionalneuralent.h" />
+    <ClInclude Include="fullyconnectedneuralnet.h" />
+    <ClInclude Include="include.h" />
     <ClInclude Include="layer.h" />
     <ClInclude Include="neuralnet.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\..\..\..\..\..\cpp\cppNeuralNet\neuralNet.net" />
+    <ClInclude Include="training.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

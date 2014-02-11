@@ -1,10 +1,5 @@
+#include "include.h"
 #include "neuralnet.h"
-
-using std::vector;
-using std::cout;
-using std::cin;
-using std::endl;
-
 
 cl::Program createProgram(cl::Context &context, std::string fname, const std::string params = "") 
 {
@@ -42,30 +37,32 @@ int main()
 
     //Create and build the program
     cl::Program program;
-    program = createProgram(context, "neuralnet.cl");
-
+    program = createProgram(context, "fullyconnectedneuralnet.cl");
 
     //Create the command queue from the first device in context
     cl::CommandQueue queue;
     queue = cl::CommandQueue(context, context.getInfo<CL_CONTEXT_DEVICES>()[0], CL_QUEUE_PROFILING_ENABLE);
 
     //Create the neural network as a vector of layers
-    cl_int netSpecArray[] = {2, 100, 100, 100, 100, 1};//We include the input layer in the netSpec, which means that we will have to perform some offsets
+    //We include the input layer in the netSpec, which means that we will have to perform some offsets
+    cl_int netSpecArray[] = {2, 100, 150, 200, 100, 1};
     vector<cl_int> netSpec (netSpecArray, netSpecArray + sizeof(netSpecArray)/sizeof(int)); 
-    NeuralNet myNet;
-    myNet.createNeuralNet(netSpec);
-    myNet.createMemoryBuffersAndKernels(context, program);
 
+    //Need to allocate the net to the heap as neural nets can be extremely large and cause stack overflow errors
+    FullyConnectedNeuralNet *myNet = new FullyConnectedNeuralNet; 
+    (*myNet).createFullyConnectedNeuralNet(netSpec);
+    (*myNet).createMemoryBuffersAndKernels(context, program);
 
     //Test it
     vector<std::tuple<float*, int*> > testData = getTestData();
+    (*myNet).calculateError(&context, &testData, &program, &queue);
 
     //Ok, now train the neural net
     int trainingIterations = 20;
-    myNet.trainNeuralNet(&context, &testData, &program, &queue, trainingIterations);
+    (*myNet).trainFullyConnectedNeuralNet(&context, &testData, &program, &queue, trainingIterations);
 
-    myNet.calculateError(&context, &testData, &program, &queue);
-	myNet.writeNeuralNetToFile(queue);
+    (*myNet).calculateError(&context, &testData, &program, &queue);
+	(*myNet).writeFullyConnectedNeuralNetToFile(queue);
     cout << "Finished!" << endl;
 
     int wait;

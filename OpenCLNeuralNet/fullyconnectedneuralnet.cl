@@ -1,4 +1,4 @@
-#define MAXSIZE 200
+#define MAXSIZE 250
 #define N 0.02
 
 typedef struct Node
@@ -7,7 +7,7 @@ typedef struct Node
     float weights[MAXSIZE];
     float output;
     float input;
-    float delta;
+    float errorGradient;
 } Node;
 
 typedef struct Layer
@@ -35,7 +35,7 @@ float sigmoidDerivative(float n)
     return k*(1-k);
 }
 
-//Used to find the (row,nodeNumber) pair that corresponds to the n'th input/delta node
+//Used to find the (row,nodeNumber) pair that corresponds to the n'th input/errorGradient node
 void inline getPosition(int n, constant int* restrict netSpec, int* restrict row, int* restrict nodeNumber)
 {
     for (unsigned int i = 1; ;++i)//Termination is determined by the break statement
@@ -51,6 +51,13 @@ void inline getPosition(int n, constant int* restrict netSpec, int* restrict row
             break;
         }
     }
+}
+
+kernel void writeOutputToBuffer(global Layer* restrict layers, global float* restrict outputs, int lastLayer)
+{
+    const int n = get_global_size(0);
+    const int i = get_global_id(0);
+    outputs[i] = layers[lastLayer].nodes[i].output;
 }
 
 //Rolled kernel that computes a layer's output
@@ -103,102 +110,102 @@ kernel void setInputs(global Layer* layers, constant float* inputs)
     layers[0].nodes[i].output = inputs[i];
 }
 
-//Implements the _online_ backwards propgatiaon algorithm that computes the delta, then uses that value to compute the weights
+//Implements the _online_ backwards propgatiaon algorithm that computes the errorGradient, then uses that value to compute the weights
 //And then apply the weights immediately. This function is for all other non-input and non-output nodes
-kernel void computeDelta_ApplyWeightChange_Rolled(global Layer* restrict layers, constant int* restrict netSpec)
+kernel void computeErrorGradient_ApplyWeightChange_Rolled(global Layer* restrict layers, constant int* restrict netSpec)
 {
     const int n = get_global_size(0);
     const int i = get_global_id(0);
 
     //Useful variables
     int layer, nodeNumber, numberOfWeights, numberOfNodes_NextLayer;
-    float delta, input, weightChange;
+    float errorGradient, input, weightChange;
     getPosition(i, netSpec, &layer, &nodeNumber);
     numberOfWeights = layers[layer].nodes[nodeNumber].numberOfWeights;
     input = layers[layer].nodes[nodeNumber].input;
     numberOfNodes_NextLayer = layers[layer+1].numberOfNodes;
        
-    //Compute delta
-    delta = 0;
+    //Compute errorGradient
+    errorGradient = 0;
     for (uint j = 0; j != numberOfNodes_NextLayer; ++j)
-        delta += layers[layer+1].nodes[j].delta * layers[layer+1].nodes[j].weights[nodeNumber];
-    delta *= sigmoidDerivative(input);
+        errorGradient += layers[layer+1].nodes[j].errorGradient * layers[layer+1].nodes[j].weights[nodeNumber];
+    errorGradient *= sigmoidDerivative(input);
 
-    //Use the delta to compute and apply the weight change
-    float NDelta = N*delta;
+    //Use the errorGradient to compute and apply the weight change
+    float NerrorGradient = N*errorGradient;
     for (uint j = 0; j != numberOfWeights; ++j)
-        layers[layer].nodes[nodeNumber].weights[j] += NDelta*layers[layer-1].nodes[j].output;
-    layers[layer].nodes[nodeNumber].delta = delta;
+        layers[layer].nodes[nodeNumber].weights[j] += NerrorGradient*layers[layer-1].nodes[j].output;
+    layers[layer].nodes[nodeNumber].errorGradient = errorGradient;
 }
 
 //Unrolled version of the above
-kernel void computeDelta_ApplyWeightChange_Unrolled(global Layer* restrict layers, constant int* restrict netSpec)
+kernel void computeErrorGradient_ApplyWeightChange_Unrolled(global Layer* restrict layers, constant int* restrict netSpec)
 {
     const int n = get_global_size(0);
     const int i = get_global_id(0);
 
     //Useful variables
     int layer, nodeNumber, numberOfWeights, numberOfNodes_NextLayer;
-    float delta, input, weightChange;
+    float errorGradient, input, weightChange;
     getPosition(i, netSpec, &layer, &nodeNumber);
     numberOfWeights = layers[layer].nodes[nodeNumber].numberOfWeights;
     input = layers[layer].nodes[nodeNumber].input;
     numberOfNodes_NextLayer = layers[layer+1].numberOfNodes;
        
-    //Compute delta
-    delta = 0;
+    //Compute errorGradient
+    errorGradient = 0;
     for (uint j = 0; j != numberOfNodes_NextLayer; j+=5)
     {
-        delta += layers[layer+1].nodes[j].delta * layers[layer+1].nodes[j].weights[nodeNumber];
-        delta += layers[layer+1].nodes[j+1].delta * layers[layer+1].nodes[j+1].weights[nodeNumber];
-        delta += layers[layer+1].nodes[j+2].delta * layers[layer+1].nodes[j+2].weights[nodeNumber];
-        delta += layers[layer+1].nodes[j+3].delta * layers[layer+1].nodes[j+3].weights[nodeNumber];
-        delta += layers[layer+1].nodes[j+4].delta * layers[layer+1].nodes[j+4].weights[nodeNumber];
+        errorGradient += layers[layer+1].nodes[j].errorGradient * layers[layer+1].nodes[j].weights[nodeNumber];
+        errorGradient += layers[layer+1].nodes[j+1].errorGradient * layers[layer+1].nodes[j+1].weights[nodeNumber];
+        errorGradient += layers[layer+1].nodes[j+2].errorGradient * layers[layer+1].nodes[j+2].weights[nodeNumber];
+        errorGradient += layers[layer+1].nodes[j+3].errorGradient * layers[layer+1].nodes[j+3].weights[nodeNumber];
+        errorGradient += layers[layer+1].nodes[j+4].errorGradient * layers[layer+1].nodes[j+4].weights[nodeNumber];
     }
-    delta *= sigmoidDerivative(input);
+    errorGradient *= sigmoidDerivative(input);
 
-    //Use the delta to compute and apply the weight change
-    float NDelta = N*delta;
+    //Use the errorGradient to compute and apply the weight change
+    float NerrorGradient = N*errorGradient;
     for (uint j = 0; j != numberOfWeights; j+=5)
     {
         //Partial unroll
-        layers[layer].nodes[nodeNumber].weights[j] += NDelta * layers[layer-1].nodes[j].output;
-        layers[layer].nodes[nodeNumber].weights[j+1] += NDelta * layers[layer-1].nodes[j+1].output;
-        layers[layer].nodes[nodeNumber].weights[j+2] += NDelta * layers[layer-1].nodes[j+2].output;
-        layers[layer].nodes[nodeNumber].weights[j+3] += NDelta * layers[layer-1].nodes[j+3].output;
-        layers[layer].nodes[nodeNumber].weights[j+4] += NDelta * layers[layer-1].nodes[j+4].output;
+        layers[layer].nodes[nodeNumber].weights[j] += NerrorGradient * layers[layer-1].nodes[j].output;
+        layers[layer].nodes[nodeNumber].weights[j+1] += NerrorGradient * layers[layer-1].nodes[j+1].output;
+        layers[layer].nodes[nodeNumber].weights[j+2] += NerrorGradient * layers[layer-1].nodes[j+2].output;
+        layers[layer].nodes[nodeNumber].weights[j+3] += NerrorGradient * layers[layer-1].nodes[j+3].output;
+        layers[layer].nodes[nodeNumber].weights[j+4] += NerrorGradient * layers[layer-1].nodes[j+4].output;
     }
-    layers[layer].nodes[nodeNumber].delta = delta;
+    layers[layer].nodes[nodeNumber].errorGradient = errorGradient;
 }
 
-//Implements the _online_ backwards propgatiaon algorithm that computes the delta, then uses that value to compute the weights
+//Implements the _online_ backwards propgatiaon algorithm that computes the errorGradient, then uses that value to compute the weights
 //And then apply the weights immediately. This function is for the output nodes
-kernel void computeDelta_ApplyWeightChange_OutputNode(global Layer* restrict layers, constant int* restrict netSpec, constant int* restrict targets)
+kernel void computeErrorGradient_ApplyWeightChange_OutputNode(global Layer* restrict layers, constant int* restrict netSpec, constant int* restrict targets)
 {
     const int n = get_global_size(0); //Also the size of the target array
     const int i = get_global_id(0); //Offset tells us which layer we are operating on
 
     //Useful variables
     int layer, nodeNumber, numberOfWeights;
-    float delta, output, input, weightChange;
+    float errorGradient, output, input, weightChange;
     getPosition(i, netSpec, &layer, &nodeNumber);
     numberOfWeights = layers[layer].nodes[nodeNumber].numberOfWeights;
     output = layers[layer].nodes[nodeNumber].output;
     input = layers[layer].nodes[nodeNumber].input;
     
-    //Compute delta
-    delta = (targets[nodeNumber] - output)*sigmoidDerivative(input);
+    //Compute errorGradient
+    errorGradient = (targets[nodeNumber] - output)*sigmoidDerivative(input);
     
-    //Use the delta to compute and apply the weight change
-    float NDelta = N*delta;
+    //Use the errorGradient to compute and apply the weight change
+    float NerrorGradient = N*errorGradient;
     for (uint j = 0; j != numberOfWeights; j+=5)
     {
         //Partial unroll
-        layers[layer].nodes[nodeNumber].weights[j] += NDelta * layers[layer-1].nodes[j].output;
-        layers[layer].nodes[nodeNumber].weights[j+1] += NDelta * layers[layer-1].nodes[j+1].output;
-        layers[layer].nodes[nodeNumber].weights[j+2] += NDelta * layers[layer-1].nodes[j+2].output;
-        layers[layer].nodes[nodeNumber].weights[j+3] += NDelta * layers[layer-1].nodes[j+3].output;
-        layers[layer].nodes[nodeNumber].weights[j+4] += NDelta * layers[layer-1].nodes[j+4].output;
+        layers[layer].nodes[nodeNumber].weights[j] += NerrorGradient * layers[layer-1].nodes[j].output;
+        layers[layer].nodes[nodeNumber].weights[j+1] += NerrorGradient * layers[layer-1].nodes[j+1].output;
+        layers[layer].nodes[nodeNumber].weights[j+2] += NerrorGradient * layers[layer-1].nodes[j+2].output;
+        layers[layer].nodes[nodeNumber].weights[j+3] += NerrorGradient * layers[layer-1].nodes[j+3].output;
+        layers[layer].nodes[nodeNumber].weights[j+4] += NerrorGradient * layers[layer-1].nodes[j+4].output;
     }
-    layers[layer].nodes[nodeNumber].delta = delta;
+    layers[layer].nodes[nodeNumber].errorGradient = errorGradient;
 }

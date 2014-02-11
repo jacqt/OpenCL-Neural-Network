@@ -25,7 +25,16 @@
     <ClCompile Include="layer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="training.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fullyconnectedneuralnet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="neuralnet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="convolutionalneuralnet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -36,15 +45,25 @@
     <ClInclude Include="neuralnet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="training.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="convolutionalneuralent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fullyconnectedneuralnet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Intel_OpenCL_Build_Rules Include="neuralnet.cl">
+    <Intel_OpenCL_Build_Rules Include="fullyconnectedneuralnet.cl">
       <Filter>OpenCL Files</Filter>
     </Intel_OpenCL_Build_Rules>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\..\..\..\..\..\cpp\cppNeuralNet\neuralNet.net">
-      <Filter>Source Files</Filter>
-    </None>
+    <Intel_OpenCL_Build_Rules Include="convolutionalneuralnet.cl">
+      <Filter>OpenCL Files</Filter>
+    </Intel_OpenCL_Build_Rules>
   </ItemGroup>
 </Project>

@@ -1,6 +1,13 @@
-#define MAXSIZE 200
+#ifndef LAYER_H
+#define LAYER_H
+#include "include.h"
+
+#define MAXSIZE 250 
+#define MAXFILTERDIM 15
+#define MAXFILTERS 15
 //Define a maxsize because pointers are not allowed to be passed to the kernel
 //Note that this number _must_ be the same as the MAXSIZE defined under neuralnet.cl
+
 
 //We define a layer struct along with node struct because we want to pass these structs to the
 //kernel running on the GPU which does not support C++ types
@@ -10,8 +17,16 @@ typedef struct Node
     float weights[MAXSIZE]; 
     float output;
     float input;
-    float delta;
+    float errorGradient;
 } Node;
+
+typedef struct Filter
+{
+    int filterDim;
+    int filterNumber;
+    float weights[MAXFILTERDIM]; 
+    float errorGradientSum;//sum of the error gradients
+} Filter;
 
 typedef struct Layer
 {
@@ -19,14 +34,17 @@ typedef struct Layer
     Node nodes[MAXSIZE];
 } Layer;
 
+typedef struct ConvolutionalLayer
+{
+    int numberOfFilters;
+    Filter filters[MAXFILTERS];
+} ConvolutionalLayer;
+
 float getRandomFloat(float lowerbound, float upperbound);
 
-Layer layer_newInputLayer(int numberOfNodes);
+Layer* layer_newInputLayer(int numberOfNodes);
 
-Layer layer_new(int numberOfNodes, int numberOfWeights);
+Layer* layer_new(int numberOfNodes, int numberOfWeights);
 
-void layer_setLayerOutputs(Layer *layer, float *outputs);
-
-int layer_size(Layer *layer);
-
-int node_size(Node *node);
+ConvolutionalLayer* layer_newConvolutionalLayer(unsigned int filterDim, unsigned int filterNumber);
+#endif
