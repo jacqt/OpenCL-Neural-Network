@@ -1,4 +1,5 @@
 This project is currently a basic, fairly optimized OpenCl implementation
-of a fully connected feed forward network.
+of a fully connected feed forward network. In addition, this project has a 
+partially implemented Convolutional Neural Network.
 
-Ability to store and load neural nets from files
+Includes ability to store and load neural nets from files
