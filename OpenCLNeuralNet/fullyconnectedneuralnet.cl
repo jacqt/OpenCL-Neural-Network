@@ -1,39 +1,4 @@
-#define MAXSIZE 250
-#define N 0.02
-
-typedef struct Node
-{
-    int numberOfWeights;
-    float weights[MAXSIZE];
-    float output;
-    float input;
-    float errorGradient;
-} Node;
-
-typedef struct Layer
-{
-    int numberOfNodes;
-    Node nodes[MAXSIZE];
-} Layer;
-
-//Returns the result of passing n through the sigmoid function; f(x) = 1/(1+exp(-x))
-float inline sigmoid(float n)
-{
-
-    //To deal with overflow rounding errors and the such
-    if (n < -100)
-        return 0;
-    if (n > 100)
-        return 1;
-    return 1/(1 + exp(-n));
-}
-
-//Returns the result of passing n through the deriviative of the sigmoid function
-float sigmoidDerivative(float n)
-{
-    float k = sigmoid(n);
-    return k*(1-k);
-}
+#include "cl_neuralnet.h"
 
 //Used to find the (row,nodeNumber) pair that corresponds to the n'th input/errorGradient node
 void inline getPosition(int n, constant int* restrict netSpec, int* restrict row, int* restrict nodeNumber)

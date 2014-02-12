@@ -57,6 +57,9 @@
     <ClInclude Include="include.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cl_neuralnet.h">
+      <Filter>OpenCL Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Intel_OpenCL_Build_Rules Include="fullyconnectedneuralnet.cl">
@@ -65,5 +68,10 @@
     <Intel_OpenCL_Build_Rules Include="convolutionalneuralnet.cl">
       <Filter>OpenCL Files</Filter>
     </Intel_OpenCL_Build_Rules>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README">
+      <Filter>resources</Filter>
+    </None>
   </ItemGroup>
 </Project>

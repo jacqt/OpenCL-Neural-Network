@@ -1,43 +1,48 @@
-#define MAXFILTERDIM 15
-#define MAXFILTERS 15
+#include "cl_neuralnet.h"
 
-typedef struct Filter
+//Rolled kernel that computes the result of performing max pooling after convolving the filters
+kernel void computeConvolveResult(
+    global ConvolutionalLayer* cLayer,
+    global float *outputArray,
+    constant float* inputArray,
+    local float* convolvingResult,
+    uint filterNumber)
 {
-    int filterDim;
-    int filterNumber;
-    float weights[MAXFILTERDIM]; 
-    float errorGradientSum;//sum of the error gradients
-} Filter;
+    const uint res_row = get_local_id(0);
+    const uint res_col = get_local_id(1);
+    const uint res_dim = get_local_size(0);
+    const uint numberOfFilters = get_num_groups(0);
+    
+    //Perform filtering operation and write it to the local output array
+    const uint filterDim = cLayer->filters[filterNumber].filterDim;
+    float output = 0;
+    for (uint i_row = 0; i_row != filterDim; ++i_row)
+    {
+        for (uint i_col = 0; i_col != filterDim; ++ i_col)
+            output += twoD_access(cLayer->filters[filterNumber].weights, i_row, i_col, filterDim) * 
+                twoD_access(inputArray, res_row + i_row, res_col + i_col, res_dim + filterDim);
+    }
+    output = sigmoid(output);
+    twoD_access(convolvingResult, res_row, res_col, res_dim) = output;
 
-typedef struct ConvolutionalLayer
-{
-    int numberOfFilters;
-    Filter filters[MAXFILTERS];
-} ConvolutionalLayer;
-
-//Returns the result of passing n through the sigmoid function; f(x) = 1/(1+exp(-x))
-float inline sigmoid(float n)
-{
-
-    //To deal with overflow rounding errors and the such
-    if (n < -100)
-        return 0;
-    if (n > 100)
-        return 1;
-    return 1/(1 + exp(-n));
+    //Now perform max pooling over 2x2 non overlapping squares if appropriate
+    if ((res_row % MAXPOOLDIM  == 0) && (res_col % MAXPOOLDIM == 0))
+    {
+        float output1 = output;
+        float output2 = twoD_access(convolvingResult, res_row, res_col + 1, res_dim);
+        float output3 = twoD_access(convolvingResult, res_row + 1, res_col, res_dim);
+        float output4 = twoD_access(convolvingResult, res_row + 1, res_col + 1, res_dim);
+        float k1 = fmax(output1, output2);
+        float k2 = fmax(output3, output4);
+        uint subOutputDim = res_dim/MAXPOOLDIM;
+        uint outputWidth = subOutputDim * numberOfFilters
+        uint outputCol = (res_col/MAXPOOLDIM) + subOutputDim * filterNumber;
+        uint outputRow = res_row/MAXPOOLDIM;
+        twoD_access(outputArray,outputRow, outputCol, outputWidth) = fmax(k1, k2);
+    }
 }
 
-//Returns the result of passing n through the deriviative of the sigmoid function
-float sigmoidDerivative(float n)
+//Given an error, trains the neural net
+kernel void trainConvolutionalNeuralNet()
 {
-    float k = sigmoid(n);
-    return k*(1-k);
-}
-
-
-//Rolled kernel that computes the result of convolving the filters 
-kernel void computeConvolveResult(global ConvolutionalLayer* restrict layers, global float* convolvingResult, constant double* inputs)
-{
-    const int row = get_global_id(0);
-    const int column = get_global_id(1);
 }

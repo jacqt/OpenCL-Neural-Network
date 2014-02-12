@@ -77,7 +77,7 @@ void FullyConnectedNeuralNet::createMemoryBuffersAndKernels(cl::Context &context
     setInputKernel.setArg(0,layersBuffer);
     setInputKernel.setArg(1,inputBuffer);
 
-    //Create computet output kernels
+    //Create compute output kernels
     computeOutputRolled = cl::Kernel(program, "computeLayerOutput_Rolled");
     computeOutputRolled.setArg(0, layersBuffer);
     computeOutputRolled.setArg(1, netSpecBuffer);
@@ -173,7 +173,6 @@ int FullyConnectedNeuralNet::getSizeOfNet()
 void FullyConnectedNeuralNet::computeOutput(
     cl::Context *context,
     cl_float *inputs,
-    cl::Program *program,
     cl::CommandQueue *queue)
 {
 
@@ -196,7 +195,6 @@ void FullyConnectedNeuralNet::computeOutput(
 void FullyConnectedNeuralNet::calculateError(
     cl::Context *context,
     vector<std::tuple<float*,int*> > *trainingData,
-    cl::Program *program,
     cl::CommandQueue *queue)
 {
     float errors = 0;
@@ -208,7 +206,7 @@ void FullyConnectedNeuralNet::calculateError(
         int *targetVector = std::get<1>(*dataPairIt);
 
         //First compute output
-        computeOutput(context, featureVector, program, queue);
+        computeOutput(context, featureVector, queue);
 
         //Write output to output buffer
 		(*queue).enqueueNDRangeKernel(writeOutputToBuffer,cl::NullRange, cl::NDRange(netSpec[lastLayerIndex]), cl::NullRange);
@@ -235,7 +233,6 @@ void FullyConnectedNeuralNet::calculateError(
 void FullyConnectedNeuralNet::trainFullyConnectedNeuralNet(
     cl::Context *context,
     vector<std::tuple<float*,int*> > *trainingData,
-    cl::Program *program,
     cl::CommandQueue *queue,
     int trainingIterations)
 {
@@ -244,7 +241,7 @@ void FullyConnectedNeuralNet::trainFullyConnectedNeuralNet(
     for (int c = 0; c != trainingIterations; ++c)
     {
         if (c%11 == 5)
-            calculateError(context, trainingData, program, queue);
+            calculateError(context, trainingData, queue);
 
         cout << "Training iteration " << c << endl;
         //Training once over all the data samples
@@ -254,7 +251,7 @@ void FullyConnectedNeuralNet::trainFullyConnectedNeuralNet(
             targetVector = std::get<1>(*dataPairIt);
 
             //First compute output
-            computeOutput(context, featureVector, program, queue);
+            computeOutput(context, featureVector, queue);
 
             //Calculate the appropriate offset
             int offset = 0;

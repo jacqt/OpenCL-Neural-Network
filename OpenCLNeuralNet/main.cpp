@@ -36,8 +36,11 @@ int main()
     cl::Context context = cl::Context(CL_DEVICE_TYPE_GPU, cps);
 
     //Create and build the program
-    cl::Program program;
-    program = createProgram(context, "fullyconnectedneuralnet.cl");
+    cl::Program fullyConnectedNeuralNetProgram;
+    fullyConnectedNeuralNetProgram = createProgram(context, "fullyconnectedneuralnet.cl");
+
+    cl::Program convolutionalNeuralNetProgram;
+    convolutionalNeuralNetProgram = createProgram(context, "convolutionalneuralnet.cl");
 
     //Create the command queue from the first device in context
     cl::CommandQueue queue;
@@ -51,17 +54,17 @@ int main()
     //Need to allocate the net to the heap as neural nets can be extremely large and cause stack overflow errors
     FullyConnectedNeuralNet *myNet = new FullyConnectedNeuralNet; 
     (*myNet).createFullyConnectedNeuralNet(netSpec);
-    (*myNet).createMemoryBuffersAndKernels(context, program);
+	(*myNet).createMemoryBuffersAndKernels(context, fullyConnectedNeuralNetProgram);
 
     //Test it
     vector<std::tuple<float*, int*> > testData = getTestData();
-    (*myNet).calculateError(&context, &testData, &program, &queue);
+    (*myNet).calculateError(&context, &testData, &queue);
 
     //Ok, now train the neural net
     int trainingIterations = 20;
-    (*myNet).trainFullyConnectedNeuralNet(&context, &testData, &program, &queue, trainingIterations);
+    (*myNet).trainFullyConnectedNeuralNet(&context, &testData, &queue, trainingIterations);
 
-    (*myNet).calculateError(&context, &testData, &program, &queue);
+    (*myNet).calculateError(&context, &testData, &queue);
 	(*myNet).writeFullyConnectedNeuralNetToFile(queue);
     cout << "Finished!" << endl;
 

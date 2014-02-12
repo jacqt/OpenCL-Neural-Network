@@ -37,21 +37,18 @@ public:
     void computeOutput(
         cl::Context *context,
         cl_float *inputs,
-        cl::Program *program,
         cl::CommandQueue *queue);
 
     //Computes the output of the neural net with the inputs being the
     //  outputs of another neural network
     void computeOutputWithInputNet(
         cl::Context *context,
-        cl::Program *program,
         cl::CommandQueue *queue);
 
     //Given test data, calculates the error rate of the neural net
     void calculateError(
         cl::Context *context,
         vector<std::tuple<float*,int*> > *trainingData,
-        cl::Program *program,
         cl::CommandQueue *queue);
 
     //Trains the neural net given a vector of tuples containing the feature vector
@@ -59,7 +56,6 @@ public:
     void trainFullyConnectedNeuralNet(
         cl::Context *context,
         vector<std::tuple<float*, int*> > *trainingData,
-        cl::Program *program,
         cl::CommandQueue *queue,
         int trainingIterations);
 
