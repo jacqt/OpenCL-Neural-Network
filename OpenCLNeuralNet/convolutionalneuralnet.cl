@@ -46,9 +46,8 @@ kernel void computeConvolveResult(
 }
 
 //Given an error, trains the neural net
-kernel void trainConvolutionalNeuralNet(
+kernel void trainConvolutionalNetworkPortion(
     global ConvolutionalLayer* restrict cLayer,
-    global float* restrict outputArray,
     global Layer* restrict layers,
     constant float* inputArray,
     local float* costArray,
@@ -60,9 +59,17 @@ kernel void trainConvolutionalNeuralNet(
     const uint res_col = get_local_id(1);
     const uint res_dim = get_local_size(0);
     const uint numberOfFilters = get_num_groups(0);
+    const uint filterDim = cLayer->filters[filterNumber].filterDim;
+
+    //Make sure the cost array is all 0
+    if (res_row == 0 && res_col == 0)
+    {
+        for (uint i = 0; i != filterDim*filterDim; ++i)
+            costArray[i] = 0;
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
     
     //Perform convolving operation and figure out the convolving output
-    const uint filterDim = cLayer->filters[filterNumber].filterDim;
     float output = 0;
     for (uint i_row = 0; i_row != filterDim; ++i_row)
     {
@@ -79,7 +86,7 @@ kernel void trainConvolutionalNeuralNet(
     uint outputWidth = subOutputDim * numberOfFilters;
     uint outputCol = (res_col/MAXPOOLDIM) + subOutputDim * filterNumber;
     uint outputRow = res_row/MAXPOOLDIM;
-    uint outputIndex = twoD_index(outputArray, outputRow, outputCol, outputWidth);
+    uint outputIndex = twoD_index(outputRow, outputCol, outputWidth);
 
     for (int i = 0; i != layers[1].numberOfNodes; ++i)
         errorGradient += layers[1].nodes[i].weights[outputIndex] * layers[1].nodes[i].errorGradient;
@@ -93,14 +100,19 @@ kernel void trainConvolutionalNeuralNet(
             float cost = twoD_access(cLayer->filters[filterNumber].weights, i_row, i_col, filterDim) * 
                 twoD_access(inputArray, res_row + i_row, res_col + i_col, res_dim + filterDim) * errorGradient;
             twoD_access(costArray, i_row, i_col, filterDim) += cost;
-            mem_fence(CLK_LOCAL_MEM_FENCE);
+
+            mem_fence(CLK_LOCAL_MEM_FENCE); //Make sure that only one work item is incrementing the cost at each time
         }
     }
 
     //Now synchronize the work items
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    //use the costs to train the net
-    for (uint j = 0; j != filterDim*filterDim; ++j)
-        cLayer->filters[filterNumber].weights[j] += N*(half_divide(costArray[j],filterDim*filterDim));
+    //use the costs to train the net.
+    //We only need one kernel to do this computation, so let it be the kernel with local index (0,0)
+    if (res_row == 0 && res_col == 0)
+    {
+        for (uint j = 0; j != filterDim*filterDim; ++j)
+            cLayer->filters[filterNumber].weights[j] += N*(half_divide(costArray[j],filterDim*filterDim));
+    }
 }

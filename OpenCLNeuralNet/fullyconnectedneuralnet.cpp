@@ -87,21 +87,21 @@ void FullyConnectedNeuralNet::createMemoryBuffersAndKernels(cl::Context &context
     computeOutputUnrolled.setArg(1, netSpecBuffer);
 
     //Create the kernel to compute the errorGradients
-	//and apply the weight changes for the rest of the layers
+    //and apply the weight changes for the rest of the layers
     calcLayerErrorGradientsRolled = cl::Kernel(program, 
-		"computeErrorGradient_ApplyWeightChange_Rolled");
+        "computeErrorGradient_ApplyWeightChange_Rolled");
     calcLayerErrorGradientsRolled.setArg(0,layersBuffer);
     calcLayerErrorGradientsRolled.setArg(1,netSpecBuffer);
 
     calcLayerErrorGradientsUnrolled= cl::Kernel(program,
-		"computeErrorGradient_ApplyWeightChange_Unrolled");
+        "computeErrorGradient_ApplyWeightChange_Unrolled");
     calcLayerErrorGradientsUnrolled.setArg(0,layersBuffer);
     calcLayerErrorGradientsUnrolled.setArg(1,netSpecBuffer);
 
     //Now create the kernel to calculate the errorGradients in the output layer
-	//and apply the appropriate weight changes
+    //and apply the appropriate weight changes
     calcOutputLayerErrorGradients = cl::Kernel(program,
-		"computeErrorGradient_ApplyWeightChange_OutputNode");
+        "computeErrorGradient_ApplyWeightChange_OutputNode");
     calcOutputLayerErrorGradients.setArg(0, layersBuffer);
     calcOutputLayerErrorGradients.setArg(1, netSpecBuffer);
     calcOutputLayerErrorGradients.setArg(2, targetBuffer);
@@ -162,7 +162,6 @@ void FullyConnectedNeuralNet::loadFullyConnectedNeuralNetFromFile(std::string ne
     }
 }
 
-
 //Returns the size of the neural net in bytes
 int FullyConnectedNeuralNet::getSizeOfNet()
 {
@@ -171,11 +170,11 @@ int FullyConnectedNeuralNet::getSizeOfNet()
 
 //Computes the output of the net given an array of inputs
 void FullyConnectedNeuralNet::computeOutput(
-    cl::Context *context,
     cl_float *inputs,
     cl::CommandQueue *queue)
 {
-
+    //Change the arg so that the setInputKernel uses the correct buffer
+    setInputKernel.setArg(1,inputBuffer);
     (*queue).enqueueWriteBuffer(inputBuffer, CL_TRUE, 0, sizeOfInput, inputs);
     (*queue).enqueueNDRangeKernel(setInputKernel,cl::NullRange, cl::NDRange(netSpec[0]), cl::NullRange);
 
@@ -192,8 +191,28 @@ void FullyConnectedNeuralNet::computeOutput(
     }
 }
 
+void FullyConnectedNeuralNet::computeOutputWithInputNet(
+    cl::Buffer* outputFromPreviousNetBuffer,
+    cl::CommandQueue* queue)
+{
+    //Change the arg so that the setInputKernel uses the correct buffer
+    setInputKernel.setArg(1,*outputFromPreviousNetBuffer);
+    (*queue).enqueueNDRangeKernel(setInputKernel,cl::NullRange, cl::NDRange(netSpec[0]), cl::NullRange);
+
+    //Now compute the output
+    unsigned int offset = 0;
+
+    for (unsigned int i = 1; i != netSpec.size(); ++i)
+    {
+        if (layers[i].nodes[0].numberOfWeights % 5 == 0)
+            (*queue).enqueueNDRangeKernel(computeOutputUnrolled, cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
+        else
+            (*queue).enqueueNDRangeKernel(computeOutputRolled, cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
+        offset += netSpec[i];
+    }
+}
+
 void FullyConnectedNeuralNet::calculateError(
-    cl::Context *context,
     vector<std::tuple<float*,int*> > *trainingData,
     cl::CommandQueue *queue)
 {
@@ -206,10 +225,10 @@ void FullyConnectedNeuralNet::calculateError(
         int *targetVector = std::get<1>(*dataPairIt);
 
         //First compute output
-        computeOutput(context, featureVector, queue);
+        computeOutput(featureVector, queue);
 
         //Write output to output buffer
-		(*queue).enqueueNDRangeKernel(writeOutputToBuffer,cl::NullRange, cl::NDRange(netSpec[lastLayerIndex]), cl::NullRange);
+        (*queue).enqueueNDRangeKernel(writeOutputToBuffer,cl::NullRange, cl::NDRange(netSpec[lastLayerIndex]), cl::NullRange);
 
         //Get the result from the buffer
         float *outputArray = new float[netSpec[netSpec.size()-1]];
@@ -231,27 +250,24 @@ void FullyConnectedNeuralNet::calculateError(
 //Trains the neural net given a vector of tuples containing the feature vector
 //  and target vector
 void FullyConnectedNeuralNet::trainFullyConnectedNeuralNet(
-    cl::Context *context,
     vector<std::tuple<float*,int*> > *trainingData,
     cl::CommandQueue *queue,
     int trainingIterations)
 {
-    int *targetVector = std::get<1>((*trainingData)[0]);
-
     for (int c = 0; c != trainingIterations; ++c)
     {
         if (c%11 == 5)
-            calculateError(context, trainingData, queue);
+            calculateError(trainingData, queue);
 
         cout << "Training iteration " << c << endl;
         //Training once over all the data samples
         for (auto dataPairIt = (*trainingData).begin(); dataPairIt != (*trainingData).end(); ++dataPairIt)
         {
-            float *featureVector = std::get<0>(*dataPairIt);
-            targetVector = std::get<1>(*dataPairIt);
+            float* featureVector = std::get<0>(*dataPairIt);
+            int* targetVector = std::get<1>(*dataPairIt);
 
             //First compute output
-            computeOutput(context, featureVector, queue);
+            computeOutput(featureVector, queue);
 
             //Calculate the appropriate offset
             int offset = 0;
@@ -263,23 +279,57 @@ void FullyConnectedNeuralNet::trainFullyConnectedNeuralNet(
 
             //Queue the kernel
             (*queue).enqueueNDRangeKernel(calcOutputLayerErrorGradients, 
-				cl::NDRange(offset), cl::NDRange(netSpec[lastLayerIndex]), cl::NullRange);
+                cl::NDRange(offset), cl::NDRange(netSpec[lastLayerIndex]), cl::NullRange);
 
             //Queue the kernels 
             for (unsigned int i = netSpec.size()-2; i != 0; --i)
             {
                 offset += -netSpec[i];
                 if (layers[i+1].numberOfNodes % 5 == 0 && layers[i].nodes[0].numberOfWeights % 5 == 0)
-				{
+                {
                     (*queue).enqueueNDRangeKernel(calcLayerErrorGradientsUnrolled,
-						cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
-				}
+                        cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
+                }
                 else
-				{
+                {
                     (*queue).enqueueNDRangeKernel(calcLayerErrorGradientsRolled,
-						cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
-				}
+                        cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
+                }
             }
+        }
+    }
+}
+
+void FullyConnectedNeuralNet::trainFullyConnectedPortion(
+    cl::Buffer *outputFromPreviousNN,
+    int* targetVector,
+    cl::CommandQueue *queue)
+{
+    //Calculate the appropriate offset
+    int offset = 0;
+    for (unsigned int i = 1; i != netSpec.size()-1 ; ++i)
+        offset += netSpec[i];
+    
+    //Queue the writebuffer
+    (*queue).enqueueWriteBuffer(targetBuffer,CL_TRUE,0,sizeOfTarget,targetVector);
+
+    //Queue the kernel
+    (*queue).enqueueNDRangeKernel(calcOutputLayerErrorGradients, 
+        cl::NDRange(offset), cl::NDRange(netSpec[lastLayerIndex]), cl::NullRange);
+
+    //Queue the kernels 
+    for (unsigned int i = netSpec.size()-2; i != 0; --i)
+    {
+        offset += -netSpec[i];
+        if (layers[i+1].numberOfNodes % 5 == 0 && layers[i].nodes[0].numberOfWeights % 5 == 0)
+        {
+            (*queue).enqueueNDRangeKernel(calcLayerErrorGradientsUnrolled,
+                cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
+        }
+        else
+        {
+            (*queue).enqueueNDRangeKernel(calcLayerErrorGradientsRolled,
+                cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
         }
     }
 }

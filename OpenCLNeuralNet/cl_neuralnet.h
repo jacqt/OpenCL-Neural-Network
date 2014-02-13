@@ -7,7 +7,7 @@
 #define MAXPOOLDIM 2
 #define N 0.02
 #define twoD_access(matrix, row, column, width) (matrix[(row)*(width) + (column)])
-#define twoD_index(matrix, row, column, width) ((row)*(width) + (column))
+#define twoD_index(row, column, width) ((row)*(width) + (column))
 
 typedef struct Node
 {

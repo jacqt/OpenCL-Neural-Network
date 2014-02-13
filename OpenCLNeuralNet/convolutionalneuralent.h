@@ -3,52 +3,61 @@
 #include "include.h"
 #include "layer.h"
 
-//Class describing a convultional neural net
-class ConvolutionalNeuralNetwork
+//Class describing the convolutional portion of a neural network
+class ConvolutionalNetworkPortion
 {
 public:
-    vector<cl_int> netSpec;
     ConvolutionalLayer convolutionalLayer;
-    cl::Buffer layersBuffer;
+    cl::Buffer cLayerBuffer;
     cl::Buffer outputsBuffer;
-    cl::Buffer inputBuffer;
+    cl::Buffer inputsBuffer;
     //If the input is a CNN or another network, we will need the pointer to the 
     //  layers of the input network to calculate the output of the network
-    cl::Buffer* inputNetOutputBuffer;
+    cl::Buffer* outputLayersBuffer; //Pointer to the network that we connect to
 
     //Writes the network to a file
-    void writeConvolutionalNeuralNetworkToFile();
+    void writeConvolutionalNetworkPortionToFile();
 
     //Loads a convolutional network from file
     void loadConvlutionalNeuralNetworkFromFile();
 
     //Creates the filters for the convolutional network
-    void createConvolutionalNetwork(unsigned int newFilterDim, 
-        unsigned int newFilterNumber,
-        unsigned int newInputDim);
+    void createConvolutionalNetwork(
+		unsigned int newFilterDim, 
+        unsigned int newFilterNumberSize,
+        unsigned int newInputDim,
+		cl::Buffer* newOutputLayerBuffer);
 
     //Create memory buffers and kernels
     void createMemoryBuffersAndKernels(cl::Context &context, cl::Program &program);
 
+    //Set the output layer buffer
+    void setOutputLayerBuffer(cl::Buffer* newOutputLayerBuffer);
+
     //Get size of net
-    int getSizeOfNet();
+    size_t getSizeOfNet();
 
     //Computes the output of the network applied to a two dimensional input vector
-    void computeOutput(vector<vector<float> > &inputs);
+	void computeOutput(float* inputs, cl::CommandQueue *queue);
 
     //Computes the output of the network from the outputs of an input neural network
-    void computeOutputWithInputNet(vector<vector<float> > &inputs);
+    //NO NEED FOR THIS AT THE PRESENT MOMENT
+  //void computeOutputWithInputNet(cl::Buffer* inputLayerBuffer);
 
-    //Uses the outputLayersBuffer to get the error gradients which it uses to train the network.
-    //  Thus no arguments are required
-    void trainNetwork();
+    //Trains the network given a set of inputs
+	void trainConvolutionalPortion(cl::CommandQueue *queue);
 
 private:
     size_t sizeOfNet;
     size_t sizeOfInput;
+    size_t sizeOfOutput;
+    size_t sizeOfConvolveResult;
     int filterDim;
-    int filterNumber;
+    int filterNumberSize;
     int inputDim;
-    cl::Kernel convolveFilter;
+    int convolveResultDim;
+    int outputDim;
+    cl::Kernel computeConvolveResult;
+    cl::Kernel trainConvolutionalNetworkPortion;
 };
 #endif
