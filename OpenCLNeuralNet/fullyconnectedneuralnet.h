@@ -47,10 +47,29 @@ public:
         vector<std::tuple<float*,int*> > *trainingData,
         cl::CommandQueue *queue);
 
+    //Overloaded value
+    void calculateError(
+        vector<float*> &trainingData,
+        vector<int*> &trainingLabel,
+        cl::CommandQueue *queue);
+
+    //Calculates a quick error; only samples 1/10th of the training data
+    void calcQuickError(
+        vector<float*> &trainingData,
+        vector<int*> &trainingLabel,
+        cl::CommandQueue *queue);
+
     //Trains the fully connected neural net given a vector of tuples containing the feature vector
     //  and target vector
     void trainFullyConnectedNeuralNet(
         vector<std::tuple<float*, int*> > *trainingData,
+        cl::CommandQueue *queue,
+        int trainingIterations);
+
+    //Overload two accept two vectors of equal length to represent an input + target
+    void trainFullyConnectedNeuralNet(
+        vector<float*> &trainingData,
+        vector<int*> &trainingLabel,
         cl::CommandQueue *queue,
         int trainingIterations);
 
@@ -64,6 +83,7 @@ public:
 
 
 private:
+    int writeFileCounter;
     int lastLayerIndex;
     size_t sizeOfNet;
     size_t sizeOfInput;

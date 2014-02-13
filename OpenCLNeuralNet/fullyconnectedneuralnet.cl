@@ -111,10 +111,10 @@ kernel void computeErrorGradient_ApplyWeightChange_Unrolled(global Layer* restri
 
     //Useful variables
     int layer, nodeNumber, numberOfWeights, numberOfNodes_NextLayer;
-    float errorGradient, input, weightChange;
+    float errorGradient, output, weightChange;
     getPosition(i, netSpec, &layer, &nodeNumber);
     numberOfWeights = layers[layer].nodes[nodeNumber].numberOfWeights;
-    input = layers[layer].nodes[nodeNumber].input;
+    output = layers[layer].nodes[nodeNumber].output;
     numberOfNodes_NextLayer = layers[layer+1].numberOfNodes;
        
     //Compute errorGradient
@@ -127,7 +127,7 @@ kernel void computeErrorGradient_ApplyWeightChange_Unrolled(global Layer* restri
         errorGradient += layers[layer+1].nodes[j+3].errorGradient * layers[layer+1].nodes[j+3].weights[nodeNumber];
         errorGradient += layers[layer+1].nodes[j+4].errorGradient * layers[layer+1].nodes[j+4].weights[nodeNumber];
     }
-    errorGradient *= sigmoidDerivative(input);
+    errorGradient *= output*(1-output);
 
     //Use the errorGradient to compute and apply the weight change
     float NerrorGradient = N*errorGradient;
@@ -152,14 +152,13 @@ kernel void computeErrorGradient_ApplyWeightChange_OutputNode(global Layer* rest
 
     //Useful variables
     int layer, nodeNumber, numberOfWeights;
-    float errorGradient, output, input, weightChange;
+    float errorGradient, output, weightChange;
     getPosition(i, netSpec, &layer, &nodeNumber);
     numberOfWeights = layers[layer].nodes[nodeNumber].numberOfWeights;
     output = layers[layer].nodes[nodeNumber].output;
-    input = layers[layer].nodes[nodeNumber].input;
     
     //Compute errorGradient
-    errorGradient = (targets[nodeNumber] - output)*sigmoidDerivative(input);
+    errorGradient = (targets[nodeNumber] - output)*output*(1-output);
     
     //Use the errorGradient to compute and apply the weight change
     float NerrorGradient = N*errorGradient;

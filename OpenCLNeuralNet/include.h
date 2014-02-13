@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <stdlib.h>
 #include <exception>
+#include <stdexcept>
+#include <time.h>
 
 using std::vector;
 using std::cout;

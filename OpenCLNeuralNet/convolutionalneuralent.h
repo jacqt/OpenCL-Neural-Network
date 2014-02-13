@@ -23,10 +23,10 @@ public:
 
     //Creates the filters for the convolutional network
     void createConvolutionalNetwork(
-		unsigned int newFilterDim, 
+        unsigned int newFilterDim, 
         unsigned int newFilterNumberSize,
         unsigned int newInputDim,
-		cl::Buffer* newOutputLayerBuffer);
+        cl::Buffer* newOutputLayerBuffer);
 
     //Create memory buffers and kernels
     void createMemoryBuffersAndKernels(cl::Context &context, cl::Program &program);
@@ -38,14 +38,14 @@ public:
     size_t getSizeOfNet();
 
     //Computes the output of the network applied to a two dimensional input vector
-	void computeOutput(float* inputs, cl::CommandQueue *queue);
+    void computeOutput(float* inputs, cl::CommandQueue *queue);
 
     //Computes the output of the network from the outputs of an input neural network
     //NO NEED FOR THIS AT THE PRESENT MOMENT
   //void computeOutputWithInputNet(cl::Buffer* inputLayerBuffer);
 
     //Trains the network given a set of inputs
-	void trainConvolutionalPortion(cl::CommandQueue *queue);
+    void trainConvolutionalPortion(cl::CommandQueue *queue);
 
 private:
     size_t sizeOfNet;

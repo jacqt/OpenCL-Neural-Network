@@ -160,6 +160,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="fullyconnectedneuralnet.cpp" />
     <ClCompile Include="neuralnet.cpp" />
+    <ClCompile Include="parseMNIST.cpp" />
     <ClCompile Include="training.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -173,10 +174,15 @@
     <ClInclude Include="include.h" />
     <ClInclude Include="layer.h" />
     <ClInclude Include="neuralnet.h" />
+    <ClInclude Include="parseMNIST.h" />
     <ClInclude Include="training.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README" />
+    <None Include="data\t10k-images.idx3-ubyte" />
+    <None Include="data\t10k-labels.idx1-ubyte" />
+    <None Include="data\train-images.idx3-ubyte" />
+    <None Include="data\train-labels.idx1-ubyte" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

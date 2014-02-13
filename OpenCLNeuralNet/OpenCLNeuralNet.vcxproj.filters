@@ -37,6 +37,9 @@
     <ClCompile Include="convolutionalneuralnet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="parseMNIST.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="layer.h">
@@ -60,6 +63,9 @@
     <ClInclude Include="cl_neuralnet.h">
       <Filter>OpenCL Files</Filter>
     </ClInclude>
+    <ClInclude Include="parseMNIST.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Intel_OpenCL_Build_Rules Include="fullyconnectedneuralnet.cl">
@@ -71,6 +77,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README">
+      <Filter>resources</Filter>
+    </None>
+    <None Include="data\train-images.idx3-ubyte">
+      <Filter>resources</Filter>
+    </None>
+    <None Include="data\train-labels.idx1-ubyte">
+      <Filter>resources</Filter>
+    </None>
+    <None Include="data\t10k-labels.idx1-ubyte">
+      <Filter>resources</Filter>
+    </None>
+    <None Include="data\t10k-images.idx3-ubyte">
       <Filter>resources</Filter>
     </None>
   </ItemGroup>

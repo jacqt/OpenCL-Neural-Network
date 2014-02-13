@@ -14,13 +14,18 @@ void FullyConnectedNeuralNet::createFullyConnectedNeuralNet(vector<cl_int> &newN
         Layer* layer = layer_new(netSpec[i],netSpec[i-1]);
         layers.push_back(*layer);
     }
+
+	writeFileCounter = 0;
 }
 
 void FullyConnectedNeuralNet::writeFullyConnectedNeuralNetToFile(cl::CommandQueue &queue)
 {
     //Implement a persistent method to store the neural net
     std::ofstream netFile;
-    netFile.open("FullyConnectedNeuralNetStructure.net");
+    std::ostringstream fileNameStream;
+    fileNameStream << "FullyConnectedNetStructure" << writeFileCounter << ".net";
+	netFile.open(fileNameStream.str());
+    ++writeFileCounter;
 
     /*File format:
      * N_INPUTS N_NODES_0 N_NODES_1 ... 
@@ -117,7 +122,7 @@ void FullyConnectedNeuralNet::createMemoryBuffersAndKernels(cl::Context &context
 void FullyConnectedNeuralNet::loadFullyConnectedNeuralNetFromFile(std::string netFileName)
 {
     //first parse the data
-    std::ifstream netFile ("C:/cpp/cppFullyConnectedNeuralNet/FullyConnectedNeuralNet.net", std::ios::in | std::ios::binary);
+    std::ifstream netFile (netFileName, std::ios::in | std::ios::binary);
     string line;
     vector<vector<double> > weightVector; 
 
@@ -160,6 +165,7 @@ void FullyConnectedNeuralNet::loadFullyConnectedNeuralNetFromFile(std::string ne
         }
         layers.push_back(*layer);
     }
+    writeFileCounter = 0;
 }
 
 //Returns the size of the neural net in bytes
@@ -216,9 +222,9 @@ void FullyConnectedNeuralNet::calculateError(
     vector<std::tuple<float*,int*> > *trainingData,
     cl::CommandQueue *queue)
 {
+    cout << "Calculating error" << endl;
     float errors = 0;
     float total = (*trainingData).size();
-    int i = 0;
     for (auto dataPairIt = (*trainingData).begin(); dataPairIt != (*trainingData).end(); ++dataPairIt)
     {
         float *featureVector = std::get<0>(*dataPairIt);
@@ -231,20 +237,141 @@ void FullyConnectedNeuralNet::calculateError(
         (*queue).enqueueNDRangeKernel(writeOutputToBuffer,cl::NullRange, cl::NDRange(netSpec[lastLayerIndex]), cl::NullRange);
 
         //Get the result from the buffer
+        float *outputArray = new float[netSpec[lastLayerIndex]];
+        (*queue).enqueueReadBuffer(outputBuffer, CL_TRUE,0,sizeOfOutput,outputArray);
+
+        //Calculate if it is an error or not
+        for (int index = 0; index != netSpec[lastLayerIndex]; ++ index)
+        {
+            int target = targetVector[index];
+            if (outputArray[index] > 0.5 && target == 0)
+            {
+                errors += 1;
+                break;
+            }
+            else if (outputArray[index] < 0.5 && target == 1)
+            {
+                errors += 1;
+                break;
+            }
+        }
+        delete outputArray;
+    }
+    cout << "NUMBER OF ERRORS: " << errors << " ERROR RATE: " << 100*(errors / total) << endl;
+}
+
+void FullyConnectedNeuralNet::calculateError(
+    vector<float*> &trainingData,
+    vector<int*> &trainingLabel,
+    cl::CommandQueue *queue)
+{
+    if (trainingLabel.size() != trainingData.size())
+    {
+        throw std::invalid_argument("training label and training data must have the same size!");
+    }
+    cout << "Calculating error" << endl;
+    time_t start, end;
+    time(&start);
+
+    float errors = 0;
+    unsigned int dataSetSize = trainingLabel.size();
+    for (int i = 0; i != dataSetSize; ++i)
+    {
+        if (i%10000 == 0)
+        {
+            cout << "    Checking input " << i << endl;
+            cout << "    So far there have been " << errors << " errors." << endl;
+        }
+        float* featureVector = trainingData[i];
+        int* targetVector = trainingLabel[i];
+
+        //First compute output
+        computeOutput(featureVector, queue);
+
+        //Write output to output buffer
+        (*queue).enqueueNDRangeKernel(writeOutputToBuffer,cl::NullRange, cl::NDRange(netSpec[lastLayerIndex]), cl::NullRange);
+
+        //Get the result from the buffer
         float *outputArray = new float[netSpec[netSpec.size()-1]];
         (*queue).enqueueReadBuffer(outputBuffer, CL_TRUE,0,sizeOfOutput,outputArray);
 
         //Calculate if it is an error or not
-        int target = targetVector[0];
-        if (outputArray[0] > 0.5 && target == 0)
-            errors += 1;
-        else if (outputArray[0] < 0.5 && target == 1)
-            errors += 1;
-
-        ++i;
+        for (int index = 0; index != netSpec[lastLayerIndex]; ++ index)
+        {
+            int target = targetVector[index];
+            if (outputArray[index] > 0.5 && target == 0)
+            {
+                errors += 1;
+                break;
+            }
+            else if (outputArray[index] < 0.5 && target == 1)
+            {
+                errors += 1;
+                break;
+            }
+        }
         delete outputArray;
     }
-    cout << "NUMBER OF ERRORS: " << errors << " ERROR RATE: " << 100*(errors / total) << endl;
+    time(&end);
+    cout << "    Completed in " << difftime(end ,start) << " seconds" << endl;
+    cout << "NUMBER OF ERRORS: " << errors << " ERROR RATE: " << 100*(errors / (float)dataSetSize) << "%" << endl;
+}
+
+void FullyConnectedNeuralNet::calcQuickError(
+    vector<float*> &trainingData,
+    vector<int*> &trainingLabel,
+    cl::CommandQueue *queue)
+{
+    if (trainingLabel.size() != trainingData.size())
+    {
+        throw std::invalid_argument("training label and training data must have the same size!");
+    }
+    cout << "Calculating quick error estimate" << endl;
+    time_t start, end;
+    time(&start);
+
+    float errors = 0;
+    unsigned int dataSetSize = trainingLabel.size();
+    for (int i = 0; i < dataSetSize; i += 10)
+    {
+        if (i%10000 == 0)
+        {
+            cout << "    Checking input " << i << endl;
+            cout << "    So far there have been " << errors << " errors." << endl;
+        }
+        float* featureVector = trainingData[i];
+        int* targetVector = trainingLabel[i];
+
+        //First compute output
+        computeOutput(featureVector, queue);
+
+        //Write output to output buffer
+        (*queue).enqueueNDRangeKernel(writeOutputToBuffer,cl::NullRange, cl::NDRange(netSpec[lastLayerIndex]), cl::NullRange);
+
+        //Get the result from the buffer
+        float *outputArray = new float[netSpec[netSpec.size()-1]];
+        (*queue).enqueueReadBuffer(outputBuffer, CL_TRUE,0,sizeOfOutput,outputArray);
+
+        //Calculate if it is an error or not
+        for (int index = 0; index != netSpec[lastLayerIndex]; ++ index)
+        {
+            int target = targetVector[index];
+            if (outputArray[index] > 0.5 && target == 0)
+            {
+                errors += 1;
+                break;
+            }
+            else if (outputArray[index] < 0.5 && target == 1)
+            {
+                errors += 1;
+                break;
+            }
+        }
+        delete outputArray;
+    }
+    time(&end);
+    cout << "    Completed in " << difftime(end ,start) << " seconds" << endl;
+    cout << "NUMBER OF ERRORS: " << errors << " ERROR RATE: " << 1000*(errors / (float)dataSetSize) << "%" << endl;
 }
 
 //Trains the neural net given a vector of tuples containing the feature vector
@@ -300,6 +427,73 @@ void FullyConnectedNeuralNet::trainFullyConnectedNeuralNet(
     }
 }
 
+void FullyConnectedNeuralNet::trainFullyConnectedNeuralNet (
+    vector<float*> &trainingData,
+    vector<int*> &trainingLabel,
+    cl::CommandQueue *queue,
+    int trainingIterations)
+{
+    if (trainingLabel.size() != trainingData.size())
+    {
+        throw std::invalid_argument("training label and training data must be of the same size!");
+    }
+    unsigned int dataSetSize = trainingLabel.size();
+    for (int c = 0; c != trainingIterations; ++c)
+    {
+        if (c%5 == 0)
+        {
+            calculateError(trainingData, trainingLabel, queue);
+            writeFullyConnectedNeuralNetToFile(*queue);
+        }
+        else
+            calcQuickError(trainingData, trainingLabel, queue);
+
+        time_t start, end;
+        time(&start);
+        cout << "Training iteration " << c << "..." << endl;
+        //Training once over all the data samples
+        for (int i = 0; i != dataSetSize; ++i)
+        {
+            if (i%10000 == 0)
+                cout << "    Training over the " << i << "th input" << endl;
+            float* featureVector = trainingData[i];
+            int* targetVector = trainingLabel[i];
+
+            //First compute output
+            computeOutput(featureVector, queue);
+
+            //Calculate the appropriate offset
+            int offset = 0;
+            for (unsigned int i = 1; i != netSpec.size()-1 ; ++i)
+                offset += netSpec[i];
+            
+            //Queue the writebuffer
+            (*queue).enqueueWriteBuffer(targetBuffer,CL_TRUE,0,sizeOfTarget,&targetVector[0]);
+
+            //Queue the kernel
+            (*queue).enqueueNDRangeKernel(calcOutputLayerErrorGradients, 
+                cl::NDRange(offset), cl::NDRange(netSpec[lastLayerIndex]), cl::NullRange);
+
+            //Queue the kernels 
+            for (unsigned int i = netSpec.size()-2; i != 0; --i)
+            {
+                offset += -netSpec[i];
+                if (layers[i+1].numberOfNodes % 5 == 0 && layers[i].nodes[0].numberOfWeights % 5 == 0)
+                {
+                    (*queue).enqueueNDRangeKernel(calcLayerErrorGradientsUnrolled,
+                        cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
+                }
+                else
+                {
+                    (*queue).enqueueNDRangeKernel(calcLayerErrorGradientsRolled,
+                        cl::NDRange(offset), cl::NDRange(netSpec[i]), cl::NullRange);
+                }
+            }
+        }
+        time(&end);
+        cout << "    Completed in " << difftime(end ,start) << "seconds" << endl;
+    }
+}
 void FullyConnectedNeuralNet::trainFullyConnectedPortion(
     cl::Buffer *outputFromPreviousNN,
     int* targetVector,
