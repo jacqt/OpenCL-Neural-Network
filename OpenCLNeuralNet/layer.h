@@ -2,7 +2,7 @@
 #define LAYER_H
 #include "include.h"
 
-#define MAXSIZE 250 
+#define MAXSIZE 1000 
 #define MAXFILTERDIM 15
 #define MAXFILTERS 15
 //Define a maxsize because pointers are not allowed to be passed to the kernel
@@ -25,7 +25,8 @@ typedef struct Filter
     int filterDim;
     int filterNumber;
     float weights[MAXFILTERDIM]; 
-    float errorGradientSum;//sum of the error gradients
+    float costs[MAXFILTERDIM];
+    float errorGradient;//sum of the error gradients
 } Filter;
 
 typedef struct Layer
