@@ -2,9 +2,10 @@
 #define LAYER_H
 #include "include.h"
 
-#define MAXSIZE 1000 
+#define MAXSIZE 3400
 #define MAXFILTERDIM 15
-#define MAXFILTERS 15
+#define MAXFILTERS 20
+#define MAXPOOLDIM 4
 //Define a maxsize because pointers are not allowed to be passed to the kernel
 //Note that this number _must_ be the same as the MAXSIZE defined under neuralnet.cl
 
@@ -24,7 +25,8 @@ typedef struct Filter
 {
     int filterDim;
     int filterNumber;
-    float weights[MAXFILTERDIM]; 
+    float weights[MAXFILTERDIM*MAXFILTERDIM]; 
+    float bias;
     float costs[MAXFILTERDIM];
     float errorGradient;//sum of the error gradients
 } Filter;

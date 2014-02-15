@@ -37,7 +37,7 @@
     <ClCompile Include="convolutionalneuralnet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parseMNIST.cpp">
+    <ClCompile Include="MNIST.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -63,7 +63,7 @@
     <ClInclude Include="cl_neuralnet.h">
       <Filter>OpenCL Files</Filter>
     </ClInclude>
-    <ClInclude Include="parseMNIST.h">
+    <ClInclude Include="MNIST.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

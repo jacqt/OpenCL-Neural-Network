@@ -160,7 +160,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="fullyconnectedneuralnet.cpp" />
     <ClCompile Include="neuralnet.cpp" />
-    <ClCompile Include="parseMNIST.cpp" />
+    <ClCompile Include="MNIST.cpp" />
     <ClCompile Include="training.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -174,7 +174,7 @@
     <ClInclude Include="include.h" />
     <ClInclude Include="layer.h" />
     <ClInclude Include="neuralnet.h" />
-    <ClInclude Include="parseMNIST.h" />
+    <ClInclude Include="MNIST.h" />
     <ClInclude Include="training.h" />
   </ItemGroup>
   <ItemGroup>

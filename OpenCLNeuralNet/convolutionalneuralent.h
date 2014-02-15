@@ -7,13 +7,17 @@
 class ConvolutionalNetworkPortion
 {
 public:
-    ConvolutionalLayer convolutionalLayer;
+    ConvolutionalLayer* convolutionalLayer;
     cl::Buffer cLayerBuffer;
     cl::Buffer outputsBuffer;
     cl::Buffer inputsBuffer;
+    cl::Buffer convolveResultBuffer;
+    cl::Buffer costBuffer;
     //If the input is a CNN or another network, we will need the pointer to the 
     //  layers of the input network to calculate the output of the network
     cl::Buffer* outputLayersBuffer; //Pointer to the network that we connect to
+
+    friend class NeuralNetwork;
 
     //Writes the network to a file
     void writeConvolutionalNetworkPortionToFile();
@@ -38,7 +42,7 @@ public:
     size_t getSizeOfNet();
 
     //Computes the output of the network applied to a two dimensional input vector
-    void computeOutput(float* inputs, cl::CommandQueue *queue);
+    void computeOutput(cl_float* inputs, cl::CommandQueue *queue);
 
     //Computes the output of the network from the outputs of an input neural network
     //NO NEED FOR THIS AT THE PRESENT MOMENT
@@ -59,5 +63,7 @@ private:
     int outputDim;
     cl::Kernel computeConvolveResult;
     cl::Kernel trainConvolutionalNetworkPortion;
+    cl::Kernel poolConvolveResult;
+    float zeroArray[3000];
 };
 #endif

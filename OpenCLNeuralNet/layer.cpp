@@ -29,28 +29,32 @@ Layer* layer_new(int numberOfNodes, int numberOfWeights)
     (*netLayer).numberOfNodes = numberOfNodes;
     for (int i = 0; i != numberOfNodes; ++i)
     {
-        Node node;
-        node.numberOfWeights = numberOfWeights;
-        node.output = 0;
+        Node* node = new Node();
+        node->numberOfWeights = numberOfWeights;
+        node->output = 0;
         for (int j = 0; j != numberOfWeights; ++j)
-            node.weights[j] = getRandomFloat(-0.15,0.15);
+            node->weights[j] = getRandomFloat(-0.1,0.1);
 
-        netLayer->nodes[i] = node;
+        netLayer->nodes[i] = *node;
     }
     return netLayer;
 }
 
 //Creates a convolutional layer
-ConvolutionalLayer* layer_newConvolutionalLayer(unsigned int filterDim, unsigned int filterNumber)
+ConvolutionalLayer* layer_newConvolutionalLayer(unsigned int filterDim, unsigned int filterNumberSize)
 {
     ConvolutionalLayer* newCLayer = new ConvolutionalLayer();
+    newCLayer->numberOfFilters = filterNumberSize;
     
-    for (unsigned int i = 0; i != filterNumber; ++i)
+    for (unsigned int i = 0; i != filterNumberSize; ++i)
     {
-        Filter filter;
-        filter.filterDim = filterDim;
-        filter.filterNumber = i;
-        (*newCLayer).filters[i] = filter;
+        Filter* filter = new Filter;
+        filter->filterDim = filterDim;
+        for (int k = 0; k != filterDim*filterDim; ++k)
+            filter->weights[k] = getRandomFloat(-0.1,0.1);
+        filter->bias = getRandomFloat(-0.25,0.25);
+        filter->filterNumber = i;
+        newCLayer->filters[i] = *filter;
     }
     return newCLayer;
 }

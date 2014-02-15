@@ -11,6 +11,8 @@ tmp/
 *.bak
 *.swp
 *~.nib
+*.~
+*.net
 local.properties
 .classpath
 .settings/

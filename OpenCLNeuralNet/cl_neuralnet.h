@@ -1,10 +1,10 @@
 #ifndef CL_NEURALNET_H
 #define CL_NEURALNET_H
 
-#define MAXSIZE 1000
+#define MAXSIZE 3400
 #define MAXFILTERDIM 15
-#define MAXFILTERS 15
-#define MAXPOOLDIM 2
+#define MAXFILTERS 20
+#define MAXPOOLDIM 4
 #define N 0.02
 #define twoD_access(matrix, row, column, width) (matrix[(row)*(width) + (column)])
 #define twoD_index(row, column, width) ((row)*(width) + (column))
@@ -28,7 +28,8 @@ typedef struct Filter
 {
     int filterDim;
     int filterNumber;
-    float weights[MAXFILTERDIM]; 
+    float weights[MAXFILTERDIM*MAXFILTERDIM]; 
+    float bias;
     float costs[MAXFILTERDIM];
     float errorGradient;//sum of the error gradients
 } Filter;

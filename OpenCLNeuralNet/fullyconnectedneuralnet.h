@@ -14,6 +14,8 @@ public:
     cl::Buffer inputBuffer;
     cl::Buffer outputBuffer;
     cl::Buffer targetBuffer;
+    friend class NeuralNetwork;
+
     //If the input is a CNN or another network, we will need the pointer to the 
     //  outputs of the input network to calculate the output of the network
     cl::Buffer *inputNetOutputBuffer;
@@ -80,8 +82,6 @@ public:
         cl::Buffer *outputFromPreviousNN,
         int* targetVector,
         cl::CommandQueue *queue);
-
-
 private:
     int writeFileCounter;
     int lastLayerIndex;

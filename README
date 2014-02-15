@@ -7,3 +7,5 @@ partially implemented Convolutional Neural Network.
 Includes ability to store and load neural nets from files
 
 MNIST Data set:
+    One fully connected neural net of size 150-200-100-10 achieved an error rate of 3.23%
+    Another one of size 800-500-250-10 has achieved an error rate of 2.3%

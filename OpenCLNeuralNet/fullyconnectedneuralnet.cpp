@@ -15,7 +15,7 @@ void FullyConnectedNeuralNet::createFullyConnectedNeuralNet(vector<cl_int> &newN
         layers.push_back(*layer);
     }
 
-	writeFileCounter = 0;
+    writeFileCounter = 0;
 }
 
 void FullyConnectedNeuralNet::writeFullyConnectedNeuralNetToFile(cl::CommandQueue &queue)
@@ -24,7 +24,7 @@ void FullyConnectedNeuralNet::writeFullyConnectedNeuralNetToFile(cl::CommandQueu
     std::ofstream netFile;
     std::ostringstream fileNameStream;
     fileNameStream << "FullyConnectedNetStructure" << writeFileCounter << ".net";
-	netFile.open(fileNameStream.str());
+    netFile.open(fileNameStream.str());
     ++writeFileCounter;
 
     /*File format:
@@ -53,6 +53,7 @@ void FullyConnectedNeuralNet::writeFullyConnectedNeuralNetToFile(cl::CommandQueu
             netFile << endl;
         }
     }
+    delete layerArray;
     netFile.close();
 }
 
@@ -201,6 +202,10 @@ void FullyConnectedNeuralNet::computeOutputWithInputNet(
     cl::Buffer* outputFromPreviousNetBuffer,
     cl::CommandQueue* queue)
 {
+//    Layer *layerArray = new Layer[netSpec.size()];
+//    queue->enqueueReadBuffer(layersBuffer, CL_TRUE,0,4*sizeof(Layer),layerArray);
+//    Layer *layerArray2 = &layerArray[1];
+
     //Change the arg so that the setInputKernel uses the correct buffer
     setInputKernel.setArg(1,*outputFromPreviousNetBuffer);
     (*queue).enqueueNDRangeKernel(setInputKernel,cl::NullRange, cl::NDRange(netSpec[0]), cl::NullRange);

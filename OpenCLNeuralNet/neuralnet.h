@@ -7,6 +7,10 @@
 //Reads a file
 std::string getFileContents(const char* fileName);
 
+//Reads a .cl file and creates a program from the .cl file
+//Throws exceptions if there are build errors and logs the errors
+cl::Program createProgram(cl::Context &context, std::string fname, const std::string params = "") ;
+
 //Gets some test data
 vector<std::tuple<float*, int*> > getTestData ();
 
@@ -14,14 +18,21 @@ vector<std::tuple<float*, int*> > getTestData ();
 class NeuralNetwork
 {
 public:
-    ConvolutionalNetworkPortion convolutionalPortion;
-    FullyConnectedNeuralNet fullyConnectedPortion;
+    ConvolutionalNetworkPortion* convolutionalPortion;
+    FullyConnectedNeuralNet* fullyConnectedPortion;
 
-    //Writes the network to a file
-    void writeNeuralNetworkToFile();
+    ~NeuralNetwork();
 
     //Loads a network from file assuming the instance has not already initalized a network
-    void loadNeuralNetworkFromFile();
+    void loadNeuralNetworkFromFile(
+		std::string netFileName,
+        cl::Context &context,
+        cl::Program &fullyConnectedProgram,
+        cl::Program &convolutionalProgram);
+
+    //Writes the network to a file
+    void writeNeuralNetworkToFile(cl::CommandQueue &queue);
+
 
     //Creates and intializes everything that is needed for the neural network
     void createNeuralNetwork(
@@ -37,8 +48,14 @@ public:
     void computeOutput(cl_float* inputs, cl::CommandQueue* queue);
 
     //Computes the error rate of the neural network on some data
-    void computeError(
+    void calculateError(
         vector<std::tuple<float*, int*> >* testData,
+        cl::CommandQueue* queue);
+
+    //Overloaded expression
+    void calculateError(
+        vector<float*> &testData,
+        vector<int*>  &testLabel,
         cl::CommandQueue* queue);
     
     //Trains the neural net given a vector of tuples containing the feature vector
@@ -47,6 +64,16 @@ public:
         vector<std::tuple<float*, int*> >* trainingData,
         cl::CommandQueue* queue,
         int trainingIterations);
+
+    //Overloaded
+    void trainNeuralNet(
+        vector<float*> &trainingData,
+        vector<int*>  &trainingLabels,
+        cl::CommandQueue* queue,
+        int trainingIterations);
+private:
+    float prevOutput[100];
+    int writeFileCounter;
 };
 
 #endif
