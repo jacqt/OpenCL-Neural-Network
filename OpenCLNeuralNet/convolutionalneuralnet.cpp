@@ -129,18 +129,20 @@ void ConvolutionalNetworkPortion::computeOutput(cl_float* inputs, cl::CommandQue
 void ConvolutionalNetworkPortion::trainConvolutionalPortion(cl::CommandQueue *queue)
 {
     trainConvolutionalNetworkPortion.setArg(4, inputDim);
+    //Mini sized ndrages
+    int miniRange1 = convolveResultDim/2;
+    int miniRange2 = (convolveResultDim/2) * filterNumberSize;
+    for (unsigned int j = 0; j != 4; ++j)
+    {
+        (*queue).enqueueNDRangeKernel(trainConvolutionalNetworkPortion,
+            cl::NDRange((j%2)*(miniRange1), (j/2)*(miniRange1)),
+            cl::NDRange(miniRange1, miniRange2),
+            cl::NDRange(miniRange1, miniRange1));
+    }
+    /*
     (*queue).enqueueNDRangeKernel(trainConvolutionalNetworkPortion,
         cl::NullRange,
         cl::NDRange(convolveResultDim, convolveResultDim* filterNumberSize),
-        cl::NullRange);
-        /*
-        for (unsigned int j = 0; j != 4; ++j)
-        {
-            (*queue).enqueueNDRangeKernel(trainConvolutionalNetworkPortion,
-                cl::NDRange((j%2)*(convolveResultDim/2), (j/2)*(convolveResultDim/2)),
-                cl::NDRange(convolveResultDim/2, convolveResultDim/2),
-                cl::NDRange(convolveResultDim/2, convolveResultDim/2));
-
-        }
-        */
+        cl::NDRange(24, 24));
+    */
 }

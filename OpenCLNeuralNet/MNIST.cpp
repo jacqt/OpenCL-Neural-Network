@@ -1,5 +1,5 @@
 #include "MNIST.h"
-#define LOADFILE
+#define FILENAME "CNN-30.net"
 #define DATASUBSET 1000
 
 #include <istream>
@@ -31,7 +31,6 @@ void readMNIST(vector<float*> &inputs, vector<int*> &targets, int &inputSize)
 
         targetFile.read((char*)&number_of_images,sizeof(number_of_images));
         number_of_images= reverseInt(number_of_images);
-
 
         for(int i=0;i != number_of_images;++i)
         {
@@ -76,7 +75,7 @@ void readMNIST(vector<float*> &inputs, vector<int*> &targets, int &inputSize)
                 {
                     unsigned char temp=0;
                     trainingFeatureFile.read((char*)&temp,sizeof(temp));
-                    inputData[r*n_cols + c] = ((float)temp);
+                    inputData[r*n_cols + c] = ((float)temp)/255.0;
                 }
             }
             inputs.push_back(inputData);
@@ -282,7 +281,7 @@ void trainMNISTConvolutionalNN()
     cl::CommandQueue queue;
     queue = cl::CommandQueue(context, context.getInfo<CL_CONTEXT_DEVICES>()[0]);
 
-#ifndef LOADFILE
+#ifndef FILENAME
     //Parameters of the CNN portion:
     int filterDim = 5;
     int filterNumberSize = 20;
@@ -291,7 +290,8 @@ void trainMNISTConvolutionalNN()
 
     //Parameters for the fully connected NN
     int numberOfInputsToFullyConnectedNN = outputDim * outputDim * filterNumberSize;
-    cl_int netSpecArray[] = {numberOfInputsToFullyConnectedNN,10};
+    cl_int netSpecArray[] = {numberOfInputsToFullyConnectedNN,1000,500,10};
+    cout << "NUMBER OF INPUTS TO FULLY CONNECTED PORTION " << numberOfInputsToFullyConnectedNN << endl;
     vector<cl_int> netSpec (netSpecArray, netSpecArray + sizeof(netSpecArray)/sizeof(int)); 
 
     //Need to allocate the net to the heap as neural nets can be extremely large and cause stack overflow errors
@@ -307,7 +307,7 @@ void trainMNISTConvolutionalNN()
 #else
     std::ofstream netFile;
     std::ostringstream fileNameStream;
-    fileNameStream << "CNN-8'.net";
+    fileNameStream << FILENAME;
     NeuralNetwork* myNet = new NeuralNetwork; 
     (*myNet).loadNeuralNetworkFromFile(
         fileNameStream.str(),
@@ -315,6 +315,7 @@ void trainMNISTConvolutionalNN()
         fullyConnectedNeuralNetProgram,
         convolutionalNeuralNetProgram);
 #endif
+	myNet->writeFileCounter = 31;
     cout << "Finished creating network. Now training it" << endl;
 
     //(*myNet).calculateError(inputs,targets,&queue);
@@ -350,11 +351,11 @@ void testMNISTConvolutionalNN()
     queue = cl::CommandQueue(context, context.getInfo<CL_CONTEXT_DEVICES>()[0], CL_QUEUE_PROFILING_ENABLE);
 
     //Iteratively loads a NN from a folder and tests to see how good it is
-    for (int i = 0 ; i < 1; i += 5)
+    for (int i = 34 ; i < 50; ++i)
     {
         std::ofstream netFile;
         std::ostringstream fileNameStream;
-        fileNameStream << "CNN-8'.net";
+        fileNameStream << "CNN-" << i << ".net";
         cout << "TESTING NET " << fileNameStream.str() << endl;
         NeuralNetwork *myNet = new NeuralNetwork; 
 		(*myNet).loadNeuralNetworkFromFile(

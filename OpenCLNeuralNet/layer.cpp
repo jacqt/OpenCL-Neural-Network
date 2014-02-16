@@ -52,7 +52,7 @@ ConvolutionalLayer* layer_newConvolutionalLayer(unsigned int filterDim, unsigned
         filter->filterDim = filterDim;
         for (int k = 0; k != filterDim*filterDim; ++k)
             filter->weights[k] = getRandomFloat(-0.1,0.1);
-        filter->bias = getRandomFloat(-0.25,0.25);
+        filter->bias = getRandomFloat(-0.1,0.1);
         filter->filterNumber = i;
         newCLayer->filters[i] = *filter;
     }

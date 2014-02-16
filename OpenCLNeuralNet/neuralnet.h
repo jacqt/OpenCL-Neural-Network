@@ -20,6 +20,7 @@ class NeuralNetwork
 public:
     ConvolutionalNetworkPortion* convolutionalPortion;
     FullyConnectedNeuralNet* fullyConnectedPortion;
+    int writeFileCounter;
 
     ~NeuralNetwork();
 
@@ -73,7 +74,6 @@ public:
         int trainingIterations);
 private:
     float prevOutput[100];
-    int writeFileCounter;
 };
 
 #endif

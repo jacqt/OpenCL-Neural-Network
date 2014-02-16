@@ -5,7 +5,7 @@
 #define MAXSIZE 3400
 #define MAXFILTERDIM 15
 #define MAXFILTERS 20
-#define MAXPOOLDIM 4
+#define MAXPOOLDIM 2
 //Define a maxsize because pointers are not allowed to be passed to the kernel
 //Note that this number _must_ be the same as the MAXSIZE defined under neuralnet.cl
 

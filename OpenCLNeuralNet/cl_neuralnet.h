@@ -4,8 +4,8 @@
 #define MAXSIZE 3400
 #define MAXFILTERDIM 15
 #define MAXFILTERS 20
-#define MAXPOOLDIM 4
-#define N 0.02
+#define MAXPOOLDIM 2
+#define N 0.01
 #define twoD_access(matrix, row, column, width) (matrix[(row)*(width) + (column)])
 #define twoD_index(row, column, width) ((row)*(width) + (column))
 

@@ -145,9 +145,9 @@ void NeuralNetwork::loadNeuralNetworkFromFile(
     for (unsigned int i = 0; i != convolutionalPortion->filterNumberSize; ++i)
     {
         for (unsigned int w = 0; w != numberOfWeights; ++w)
-			convolutionalPortion->convolutionalLayer->filters[i].weights[w] = weightVector[weightVectorIndex][w];
+            convolutionalPortion->convolutionalLayer->filters[i].weights[w] = weightVector[weightVectorIndex][w];
 
-		convolutionalPortion->convolutionalLayer->filters[i].bias = weightVector[weightVectorIndex][numberOfWeights];
+        convolutionalPortion->convolutionalLayer->filters[i].bias = weightVector[weightVectorIndex][numberOfWeights];
         ++weightVectorIndex;
     }
 
@@ -158,14 +158,14 @@ void NeuralNetwork::loadNeuralNetworkFromFile(
     /*
     //Create the input layer
     Layer* inputLayer = new Layer;
-	inputLayer = layer_newInputLayer(fullyConnectedNetSpec[0]);
+    inputLayer = layer_newInputLayer(fullyConnectedNetSpec[0]);
     fullyConnectedPortion->layers.push_back(*inputLayer);
 
     //Create the rest of the layers
     for (unsigned int i = 1; i != fullyConnectedNetSpec.size(); ++i)
     {
         Layer* layer = new Layer;
-		layer_new(fullyConnectedNetSpec[i],fullyConnectedNetSpec[i-1]);
+        layer_new(fullyConnectedNetSpec[i],fullyConnectedNetSpec[i-1]);
         for (int j = 0; j != (*layer).numberOfNodes; ++j)
         {
             for (int k = 0; k != (*layer).nodes[j].numberOfWeights; ++k)
@@ -350,7 +350,7 @@ void NeuralNetwork::calculateError(
     }
     time(&end);
     cout << "    Completed in " << difftime(end ,start) << " seconds" << endl;
-    cout << "NUMBER OF ERRORS: " << errors << " ERROR RATE: " << 100*(errors / total) << endl;
+    cout << "NUMBER OF ERRORS: " << errors << " ERROR RATE: " << 100*(errors / total) << "%" << endl;
     if (errors < total)
         writeNeuralNetworkToFile(*queue);
 
