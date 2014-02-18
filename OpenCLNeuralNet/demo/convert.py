@@ -89,7 +89,6 @@ def getFeatureVecFromImg(image):
     im2 = im.resize((28,28), Image.ANTIALIAS)
     enhancer = ImageEnhance.Contrast(im2)
     im2 = enhancer.enhance(2.0)
-    im2.save("lol.png")
 
     im2list = numpy.asarray(im2).tolist()
     featureVec = list(itertools.chain(*im2list))
