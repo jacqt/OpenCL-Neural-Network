@@ -23,7 +23,7 @@ void FullyConnectedNeuralNet::writeFullyConnectedNeuralNetToFile(cl::CommandQueu
     //Implement a persistent method to store the neural net
     std::ofstream netFile;
     std::ostringstream fileNameStream;
-    fileNameStream << "FullyConnectedNetStructure" << writeFileCounter << ".net";
+    fileNameStream << "NN-" << writeFileCounter << ".net";
     netFile.open(fileNameStream.str());
     ++writeFileCounter;
 
@@ -284,8 +284,7 @@ void FullyConnectedNeuralNet::calculateError(
     {
         if (i%10000 == 0)
         {
-            cout << "    Checking input " << i << endl;
-            cout << "    So far there have been " << errors << " errors." << endl;
+            cout << "    Checking input " << i << ". # Errors: " << errors << endl;
         }
         float* featureVector = trainingData[i];
         int* targetVector = trainingLabel[i];
@@ -341,8 +340,7 @@ void FullyConnectedNeuralNet::calcQuickError(
     {
         if (i%10000 == 0)
         {
-            cout << "    Checking input " << i << endl;
-            cout << "    So far there have been " << errors << " errors." << endl;
+            cout << "    Checking input " << i << ". # Errors: " << errors << endl;
         }
         float* featureVector = trainingData[i];
         int* targetVector = trainingLabel[i];
@@ -443,7 +441,7 @@ void FullyConnectedNeuralNet::trainFullyConnectedNeuralNet (
         throw std::invalid_argument("training label and training data must be of the same size!");
     }
     unsigned int dataSetSize = trainingLabel.size();
-    for (int c = 0; c != trainingIterations; ++c)
+    for (int c = 1; c != trainingIterations; ++c)
     {
         if (c%5 == 0)
         {
@@ -461,11 +459,15 @@ void FullyConnectedNeuralNet::trainFullyConnectedNeuralNet (
         {
             if (i%10000 == 0)
                 cout << "    Training over the " << i << "th input" << endl;
-            float* featureVector = trainingData[i];
+            float* featureVector = getRandomDistortion(trainingData[i]);
             int* targetVector = trainingLabel[i];
 
             //First compute output
             computeOutput(featureVector, queue);
+
+            //Garbage collect
+            delete featureVector;
+
 
             //Calculate the appropriate offset
             int offset = 0;
@@ -500,7 +502,6 @@ void FullyConnectedNeuralNet::trainFullyConnectedNeuralNet (
     }
 }
 void FullyConnectedNeuralNet::trainFullyConnectedPortion(
-    cl::Buffer *outputFromPreviousNN,
     int* targetVector,
     cl::CommandQueue *queue)
 {

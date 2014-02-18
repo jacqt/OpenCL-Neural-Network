@@ -5,12 +5,14 @@ void ConvolutionalNetworkPortion::createConvolutionalNetwork(
     unsigned int newFilterDim,
     unsigned int newFilterNumberSize,
     unsigned int newInputDim,
+    unsigned int newInputVectorNumberSize,
     cl::Buffer* newOutputLayerBuffer)
 {
     convolutionalLayer = layer_newConvolutionalLayer(newFilterDim, newFilterNumberSize);
     filterDim = newFilterDim;
     filterNumberSize = newFilterNumberSize;
     inputDim = newInputDim;
+    inputVectorNumberSize = newInputVectorNumberSize;
     outputLayersBuffer = newOutputLayerBuffer;
 }
 
@@ -20,7 +22,7 @@ void ConvolutionalNetworkPortion::createMemoryBuffersAndKernels(cl::Context &con
     outputDim = convolveResultDim / MAXPOOLDIM;
 
     sizeOfNet = getSizeOfNet();
-    sizeOfInput = sizeof(cl_float)*inputDim*inputDim;
+    sizeOfInput = sizeof(cl_float) * inputDim * inputDim * inputVectorNumberSize; 
     sizeOfConvolveResult = sizeof(cl_float) * (convolveResultDim * convolveResultDim) * filterNumberSize;
     sizeOfOutput = sizeof(cl_float) * outputDim * outputDim * filterNumberSize;
     float zeroArray [2000] = { 0 };
@@ -44,7 +46,8 @@ void ConvolutionalNetworkPortion::createMemoryBuffersAndKernels(cl::Context &con
     computeConvolveResult.setArg(1,outputsBuffer);
     computeConvolveResult.setArg(2,inputsBuffer);
     computeConvolveResult.setArg(3,convolveResultBuffer);
-  //computeConvolveResult.setArg(4, the index of the filter to use)
+    computeConvolveResult.setArg(4, inputDim);
+    computeConvolveResult.setArg(5, inputVectorNumberSize);
 
     poolConvolveResult = cl::Kernel(program, "poolConvolveResult");
     poolConvolveResult.setArg(0, cLayerBuffer);
@@ -73,26 +76,21 @@ size_t ConvolutionalNetworkPortion::getSizeOfNet()
 void ConvolutionalNetworkPortion::computeOutput(cl_float* inputs, cl::CommandQueue *queue)
 {
 
-    int sum = 0;
-    for (int c = 0; c != sizeOfInput/4; ++c)
-        sum += inputs[c];
     //Assume the inputs are flattened
     (*queue).enqueueWriteBuffer(inputsBuffer, CL_TRUE, 0, sizeOfInput, inputs);
     
-    computeConvolveResult.setArg(4, inputDim);
     (*queue).enqueueNDRangeKernel(computeConvolveResult,
         cl::NullRange,
         cl::NDRange(convolveResultDim, convolveResultDim* filterNumberSize),
         cl::NullRange);
 
-    queue->finish();
     poolConvolveResult.setArg(3, inputDim);
     (*queue).enqueueNDRangeKernel(poolConvolveResult,
 		cl::NullRange,
         cl::NDRange(outputDim, outputDim * filterNumberSize),
         cl::NullRange);
 
-    /*
+#ifdef _DEBUG
     cl_float *outputArray = new cl_float[720];
     queue->enqueueReadBuffer(outputsBuffer,
         CL_TRUE,
@@ -101,23 +99,8 @@ void ConvolutionalNetworkPortion::computeOutput(cl_float* inputs, cl::CommandQue
         outputArray);
     for (int c = 0; c < 720; c+=100)
         cout << c << " " << outputArray[c] << " ";
-        */
-    //Set final arg for computeConvolveResult
-    /*
-    for (unsigned int i = 0; i != filterNumberSize; ++i)
-    {
-        computeConvolveResult.setArg(4, i);
-        computeConvolveResult.setArg(5, filterNumberSize);
-        poolConvolveResult.setArg(3, i);
-        poolConvolveResult.setArg(4, filterNumberSize);
-        (*queue).enqueueNDRangeKernel(computeConvolveResult,cl::NullRange,
-            cl::NDRange(convolveResultDim, convolveResultDim),
-            cl::NullRange);
-        (*queue).enqueueNDRangeKernel(poolConvolveResult,cl::NullRange,
-            cl::NDRange(outputDim, outputDim),
-            cl::NullRange);
-    }
-    */
+#else
+#endif
 }
 
 /*Trains the network. We assume we have already written the inputs to the inputbuffer
@@ -145,4 +128,26 @@ void ConvolutionalNetworkPortion::trainConvolutionalPortion(cl::CommandQueue *qu
         cl::NDRange(convolveResultDim, convolveResultDim* filterNumberSize),
         cl::NDRange(24, 24));
     */
+}
+
+void ConvolutionalNeuralNetwork::createConvolutionalNeuralNetwork(
+	const vector<vector<int> > &newConvolutionalNetSpec,
+	const cl::Program program)
+{
+    //Assign value to private variable
+	convolutionalNetSpec = newConvolutionalNetSpec;
+
+    for (auto convIt = convolutionalNetSpec.begin(); convIt != convolutionalNetSpec.end(); ++convIt)
+	{
+        ConvolutionalNetworkPortion* newLayer = new ConvolutionalNetworkPortion;
+		newLayer->createConvolutionalNetwork(
+            (*convIt)[0],
+            (*convIt)[1],
+            (*convIt)[2],
+            (*convIt)[3],
+            NULL); //Assign the output buffer later
+
+        //newLayer->createMemoryBuffersAndKernels(context, program);
+		//layers.push_back(*newLayer);
+    }
 }

@@ -156,6 +156,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="convolutionalneuralnet.cpp" />
+    <ClCompile Include="distortions.cpp" />
     <ClCompile Include="layer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="fullyconnectedneuralnet.cpp" />
@@ -167,7 +168,7 @@
     <Intel_OpenCL_Build_Rules Include="convolutionalneuralnet.cl">
       <Device Condition="'$(Configuration)|$(Platform)'=='Release|x64'">1</Device>
       <SPConstant Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</SPConstant>
-      <MadEnable Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</MadEnable>
+      <MadEnable Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</MadEnable>
       <FiniteMath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</FiniteMath>
       <IR Condition="'$(Configuration)|$(Platform)'=='Release|x64'">1</IR>
     </Intel_OpenCL_Build_Rules>
@@ -175,14 +176,15 @@
       <Device Condition="'$(Configuration)|$(Platform)'=='Release|x64'">1</Device>
       <IR Condition="'$(Configuration)|$(Platform)'=='Release|x64'">1</IR>
       <SPConstant Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</SPConstant>
-      <MadEnable Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</MadEnable>
-      <NoSignedZeroes Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</NoSignedZeroes>
+      <MadEnable Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</MadEnable>
+      <NoSignedZeroes Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</NoSignedZeroes>
       <FiniteMath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</FiniteMath>
     </Intel_OpenCL_Build_Rules>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cl_neuralnet.h" />
     <ClInclude Include="convolutionalneuralent.h" />
+    <ClInclude Include="distortions.h" />
     <ClInclude Include="fullyconnectedneuralnet.h" />
     <ClInclude Include="include.h" />
     <ClInclude Include="layer.h" />

@@ -40,6 +40,9 @@
     <ClCompile Include="MNIST.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="distortions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="layer.h">
@@ -64,6 +67,9 @@
       <Filter>OpenCL Files</Filter>
     </ClInclude>
     <ClInclude Include="MNIST.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="distortions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

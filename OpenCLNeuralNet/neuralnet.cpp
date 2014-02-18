@@ -64,12 +64,14 @@ vector<std::tuple<float*, int*> > getTestData ()
     return trainingDataSet;
 }
 
+//Deconstructor
 NeuralNetwork::~NeuralNetwork()
 {
     delete convolutionalPortion;
     delete fullyConnectedPortion;
 }
 
+//Rewrite to allow for multi convolutional layers
 void NeuralNetwork::loadNeuralNetworkFromFile(
     std::string netFileName,
     cl::Context &context,
@@ -136,6 +138,7 @@ void NeuralNetwork::loadNeuralNetworkFromFile(
         newFilterDim,
         newFilterNumberSize,
         newInputDim,
+        1,
         NULL);
     //Set the weights
     int filterDim = newFilterDim;
@@ -155,26 +158,6 @@ void NeuralNetwork::loadNeuralNetworkFromFile(
     fullyConnectedPortion = new FullyConnectedNeuralNet();
     fullyConnectedPortion->createFullyConnectedNeuralNet(fullyConnectedNetSpec);
 
-    /*
-    //Create the input layer
-    Layer* inputLayer = new Layer;
-    inputLayer = layer_newInputLayer(fullyConnectedNetSpec[0]);
-    fullyConnectedPortion->layers.push_back(*inputLayer);
-
-    //Create the rest of the layers
-    for (unsigned int i = 1; i != fullyConnectedNetSpec.size(); ++i)
-    {
-        Layer* layer = new Layer;
-        layer_new(fullyConnectedNetSpec[i],fullyConnectedNetSpec[i-1]);
-        for (int j = 0; j != (*layer).numberOfNodes; ++j)
-        {
-            for (int k = 0; k != (*layer).nodes[j].numberOfWeights; ++k)
-                (*layer).nodes[j].weights[k] = weightVector[weightVectorIndex][k];
-            ++weightVectorIndex;
-        }
-        fullyConnectedPortion->layers.push_back(*layer);
-    }
-    */
     //Set the weights
     for (unsigned int i = 1; i != fullyConnectedPortion->netSpec.size(); ++i)
     {
@@ -195,6 +178,7 @@ void NeuralNetwork::loadNeuralNetworkFromFile(
     writeFileCounter = 0;
 }
 
+//Need to be rewritten to allow for multi convolutional layers
 void NeuralNetwork::writeNeuralNetworkToFile(cl::CommandQueue &queue)
 {
     /*Format
@@ -212,7 +196,7 @@ void NeuralNetwork::writeNeuralNetworkToFile(cl::CommandQueue &queue)
     std::ostringstream fileNameStream;
     fileNameStream << "CNN-" << writeFileCounter << ".net";
     netFile.open(fileNameStream.str());
-    ++writeFileCounter;
+    writeFileCounter += 3;
 
     netFile << convolutionalPortion->inputDim << " " << convolutionalPortion->filterDim << " ";
     netFile << MAXPOOLDIM << " " << convolutionalPortion->filterNumberSize;
@@ -282,6 +266,7 @@ void NeuralNetwork::createNeuralNetwork(
         newFilterDim,
         newFilterNumberSize,
         newInputDim,
+        1,
         &(fullyConnectedPortion->layersBuffer));
 
     convolutionalPortion->createMemoryBuffersAndKernels(context, convolutionalProgram);
@@ -351,13 +336,13 @@ void NeuralNetwork::calculateError(
     time(&end);
     cout << "    Completed in " << difftime(end ,start) << " seconds" << endl;
     cout << "NUMBER OF ERRORS: " << errors << " ERROR RATE: " << 100*(errors / total) << "%" << endl;
-    if (errors < total)
-        writeNeuralNetworkToFile(*queue);
+    writeNeuralNetworkToFile(*queue);
 
 }
 void NeuralNetwork::computeOutput(cl_float* inputs, cl::CommandQueue *queue)
 {
     //First compute output of the convolutional portion
+    
     convolutionalPortion->computeOutput(inputs, queue);
 
     //Now compute the output of the fully connected portion
@@ -382,7 +367,6 @@ void NeuralNetwork::trainNeuralNet(
             computeOutput(featureVector, queue);
 
             fullyConnectedPortion->trainFullyConnectedPortion(
-                &convolutionalPortion->outputsBuffer,
                 targetVector,
                 queue);
 
@@ -421,7 +405,6 @@ void NeuralNetwork::trainNeuralNet(
             computeOutput(featureVector, queue);
 
             fullyConnectedPortion->trainFullyConnectedPortion(
-                &convolutionalPortion->outputsBuffer,
                 targetVector,
                 queue);
 
@@ -429,7 +412,8 @@ void NeuralNetwork::trainNeuralNet(
         }
         time(&end);
         cout << "    Completed in " << difftime(end ,start) << " seconds" << endl;
-        calculateError(trainingData, trainingLabels, queue);
+        if (c % 3 == 0)
+            calculateError(trainingData, trainingLabels, queue);
     }
 
 }

@@ -1,5 +1,5 @@
 #include "MNIST.h"
-#define FILENAME "CNN-30.net"
+//#define FILENAME "CNN-27.net"
 #define DATASUBSET 1000
 
 #include <istream>
@@ -156,6 +156,26 @@ void readMNISTTest(vector<float*> &inputs, vector<int*> &targets, int &inputSize
     }
 }
 
+//Prints out an image matrix form
+void printInput(float* inputs)
+{
+    cout << "BELOW IS AN IMAGE" << endl;
+    int c = 0;
+    for (int i = 0; i != 28; ++i)
+    {
+        cout << "    " << endl;
+        for (int j = 0; j != 28; ++j)
+        {
+            if (inputs[c] > 0)
+                cout << 1;
+            else
+                cout << 0;
+            ++c;
+        }
+        cout << endl;
+    }
+}
+
 void trainMNISTFullyConnectedNN()
 {
 
@@ -188,7 +208,7 @@ void trainMNISTFullyConnectedNN()
 
     //Create the neural network as a vector of layers
     //We include the input layer in the netSpec, which means that we will have to perform some offsets
-    cl_int netSpecArray[] = {inputSize, 800, 500, 250, 100, 10};
+    cl_int netSpecArray[] = {inputSize, 1500, 1000, 500, 10};
     vector<cl_int> netSpec (netSpecArray, netSpecArray + sizeof(netSpecArray)/sizeof(int)); 
 
     //Need to allocate the net to the heap as neural nets can be extremely large and cause stack overflow errors
@@ -197,7 +217,7 @@ void trainMNISTFullyConnectedNN()
     (*myNet).createMemoryBuffersAndKernels(context, fullyConnectedNeuralNetProgram);
 
     //Ok, now train the neural net
-    int trainingIterations = 100;
+    int trainingIterations = 150;
     (*myNet).trainFullyConnectedNeuralNet(inputs, targets, &queue, trainingIterations);
 
     (*myNet).calculateError(inputs, targets, &queue);
@@ -284,13 +304,13 @@ void trainMNISTConvolutionalNN()
 #ifndef FILENAME
     //Parameters of the CNN portion:
     int filterDim = 5;
-    int filterNumberSize = 20;
+    int filterNumberSize = 5;
     int inputDim = 28;
     int outputDim = (inputDim - filterDim + 1) / MAXPOOLDIM;
 
     //Parameters for the fully connected NN
     int numberOfInputsToFullyConnectedNN = outputDim * outputDim * filterNumberSize;
-    cl_int netSpecArray[] = {numberOfInputsToFullyConnectedNN,1000,500,10};
+    cl_int netSpecArray[] = {numberOfInputsToFullyConnectedNN,70,10};
     cout << "NUMBER OF INPUTS TO FULLY CONNECTED PORTION " << numberOfInputsToFullyConnectedNN << endl;
     vector<cl_int> netSpec (netSpecArray, netSpecArray + sizeof(netSpecArray)/sizeof(int)); 
 
@@ -304,6 +324,7 @@ void trainMNISTConvolutionalNN()
         filterDim, //newFilterDim
         filterNumberSize, //newFilterNumberSize
         inputDim); //newInputDim
+    myNet->writeFileCounter = 0;
 #else
     std::ofstream netFile;
     std::ostringstream fileNameStream;
@@ -314,8 +335,8 @@ void trainMNISTConvolutionalNN()
         context,
         fullyConnectedNeuralNetProgram,
         convolutionalNeuralNetProgram);
+    myNet->writeFileCounter = 30;
 #endif
-	myNet->writeFileCounter = 31;
     cout << "Finished creating network. Now training it" << endl;
 
     //(*myNet).calculateError(inputs,targets,&queue);
@@ -350,6 +371,16 @@ void testMNISTConvolutionalNN()
     cl::CommandQueue queue;
     queue = cl::CommandQueue(context, context.getInfo<CL_CONTEXT_DEVICES>()[0], CL_QUEUE_PROFILING_ENABLE);
 
+#ifdef FILENAME
+    NeuralNetwork *myNet = new NeuralNetwork; 
+    (*myNet).loadNeuralNetworkFromFile(
+        FILENAME,
+        context,
+        fullyConnectedNeuralNetProgram,
+        convolutionalNeuralNetProgram);
+    (*myNet).calculateError(testInputs,testTargets,&queue);
+    delete myNet;
+#else
     //Iteratively loads a NN from a folder and tests to see how good it is
     for (int i = 34 ; i < 50; ++i)
     {
@@ -358,13 +389,13 @@ void testMNISTConvolutionalNN()
         fileNameStream << "CNN-" << i << ".net";
         cout << "TESTING NET " << fileNameStream.str() << endl;
         NeuralNetwork *myNet = new NeuralNetwork; 
-		(*myNet).loadNeuralNetworkFromFile(
-			fileNameStream.str(),
-			context,
-			fullyConnectedNeuralNetProgram,
-			convolutionalNeuralNetProgram);
+        (*myNet).loadNeuralNetworkFromFile(
+            fileNameStream.str(),
+            context,
+            fullyConnectedNeuralNetProgram,
+            convolutionalNeuralNetProgram);
         (*myNet).calculateError(testInputs,testTargets,&queue);
         delete myNet;
     }
-
+#endif
 }

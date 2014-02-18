@@ -12,7 +12,6 @@ public:
     cl::Buffer outputsBuffer;
     cl::Buffer inputsBuffer;
     cl::Buffer convolveResultBuffer;
-    cl::Buffer costBuffer;
     //If the input is a CNN or another network, we will need the pointer to the 
     //  layers of the input network to calculate the output of the network
     cl::Buffer* outputLayersBuffer; //Pointer to the network that we connect to
@@ -30,6 +29,7 @@ public:
         unsigned int newFilterDim, 
         unsigned int newFilterNumberSize,
         unsigned int newInputDim,
+        unsigned int newInputVectorNumberSize,
         cl::Buffer* newOutputLayerBuffer);
 
     //Create memory buffers and kernels
@@ -56,14 +56,28 @@ private:
     size_t sizeOfInput;
     size_t sizeOfOutput;
     size_t sizeOfConvolveResult;
+    int inputDim;
+    int inputVectorNumberSize;
     int filterDim;
     int filterNumberSize;
-    int inputDim;
     int convolveResultDim;
     int outputDim;
     cl::Kernel computeConvolveResult;
     cl::Kernel trainConvolutionalNetworkPortion;
     cl::Kernel poolConvolveResult;
-    float zeroArray[3000];
+};
+
+//Class describing a series of convolutional layers combined together
+class ConvolutionalNeuralNetwork
+{
+public:
+    vector<ConvolutionalNetworkPortion> layers;
+
+    void createConvolutionalNeuralNetwork(
+		const vector<vector<int> > &newConvolutionalNetSpec,
+		const cl::Program convolutionalProgram);
+
+private:
+    vector<vector<int> > convolutionalNetSpec;
 };
 #endif

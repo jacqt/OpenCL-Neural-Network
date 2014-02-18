@@ -1,5 +1,4 @@
 #include "include.h"
-#include "neuralnet.h"
 #include "MNIST.h"
 
 
@@ -61,9 +60,9 @@ void testFullyConnectedNeuralNet()
 
 int main()
 {
-    //trainMNISTFullyConnectedNN();
+    trainMNISTFullyConnectedNN();
     //testMNISTFullyConnectedNN();
-    trainMNISTConvolutionalNN();
+    //trainMNISTConvolutionalNN();
     //testMNISTConvolutionalNN();
     cout << "Enter any input to exit" << endl;
     int f;

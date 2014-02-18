@@ -1,6 +1,7 @@
 #ifndef FULLYCONNECTED_H
 #define FULLYCONNECTED_H
 #include "include.h"
+#include "distortions.h"
 #include "layer.h"
 
 //Class describing a fully connected neural net
@@ -79,7 +80,6 @@ public:
     //input buffer and a target. We assume that the NN has already been computed (i.e.
     //we leave the computation step to the trainer that calls this function)
     void trainFullyConnectedPortion(
-        cl::Buffer *outputFromPreviousNN,
         int* targetVector,
         cl::CommandQueue *queue);
 private:

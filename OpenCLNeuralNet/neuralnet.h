@@ -26,7 +26,7 @@ public:
 
     //Loads a network from file assuming the instance has not already initalized a network
     void loadNeuralNetworkFromFile(
-		std::string netFileName,
+        std::string netFileName,
         cl::Context &context,
         cl::Program &fullyConnectedProgram,
         cl::Program &convolutionalProgram);
