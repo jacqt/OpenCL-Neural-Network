@@ -1,5 +1,5 @@
 #include "MNIST.h"
-//#define FILENAME "CNN-27.net"
+//#define FILENAME "CNN-27.net" //Name of the CNN to load
 #define DATASUBSET 1000
 
 #include <istream>
@@ -216,6 +216,10 @@ void trainMNISTFullyConnectedNN()
     (*myNet).createFullyConnectedNeuralNet(netSpec);
     (*myNet).createMemoryBuffersAndKernels(context, fullyConnectedNeuralNetProgram);
 
+    //Code to load a neural network and train that one
+    //(*myNet).loadFullyConnectedNeuralNetFromFile("NN-43.net");
+    //(*myNet).createMemoryBuffersAndKernels(context, fullyConnectedNeuralNetProgram);
+
     //Ok, now train the neural net
     int trainingIterations = 150;
     (*myNet).trainFullyConnectedNeuralNet(inputs, targets, &queue, trainingIterations);
@@ -259,11 +263,11 @@ void testMNISTFullyConnectedNN()
     queue = cl::CommandQueue(context, context.getInfo<CL_CONTEXT_DEVICES>()[0], CL_QUEUE_PROFILING_ENABLE);
 
     //Iteratively loads a NN from a folder and tests to see how good it is
-    for (int i = 0 ; i != 125; i += 5)
+    for (int i = 0 ; i != 51; i += 1)//Iterates through neural nets and tests it against the testing set
     {
         std::ofstream netFile;
         std::ostringstream fileNameStream;
-        fileNameStream << "MNIST-NN/784-800-500-250-100-10/" << i << "-nn.net";
+        fileNameStream << "NN-" << i << ".net";
         cout << "TESTING NET " << fileNameStream.str() << endl;
         FullyConnectedNeuralNet *myNet = new FullyConnectedNeuralNet; 
         (*myNet).loadFullyConnectedNeuralNetFromFile(fileNameStream.str());

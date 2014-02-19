@@ -5,7 +5,7 @@
 #define MAXFILTERDIM 15
 #define MAXFILTERS 20
 #define MAXPOOLDIM 2
-#define N 0.01
+#define N 0.0005
 #define twoD_access(matrix, row, column, width) (matrix[(row)*(width) + (column)])
 #define twoD_index(row, column, width) ((row)*(width) + (column))
 
@@ -48,12 +48,5 @@ float inline sigmoid(float n)
     if (n > 100)
         return 1;
     return 1/(1 + exp(-n));
-}
-
-//Returns the result of passing n through the deriviative of the sigmoid function
-float sigmoidDerivative(float n)
-{
-    float k = sigmoid(n);
-    return k*(1-k);
 }
 #endif

@@ -3,10 +3,10 @@
 float* getRandomDistortion(float* inputs) 
 {
     //Returns several randomly translated image and scaled images
-    int xTrans = (int) getRandomFloat(-3,3);
-    int yTrans = (int) getRandomFloat(-3,3);
-    float xScale = getRandomFloat(.9,1.9);
-    float yScale = getRandomFloat(.9,1.9);
+    int xTrans = (int) getRandomFloat(-2,2);
+    int yTrans = (int) getRandomFloat(-2,2);
+    float xScale = getRandomFloat(.94,1.06);
+    float yScale = getRandomFloat(.94,1.06);
     float* distortedImagePre = scale(inputs, xScale, yScale);
     float* distortedImageFinal = translate(distortedImagePre, xTrans, yTrans);
     delete distortedImagePre;

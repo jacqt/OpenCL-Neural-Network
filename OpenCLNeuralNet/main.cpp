@@ -57,15 +57,14 @@ void testFullyConnectedNeuralNet()
 
 }
 
-
 int main()
 {
-    trainMNISTFullyConnectedNN();
+    //trainMNISTFullyConnectedNN();
     //testMNISTFullyConnectedNN();
     //trainMNISTConvolutionalNN();
     //testMNISTConvolutionalNN();
     cout << "Enter any input to exit" << endl;
-    int f;
-    cin >> f;
+    int someInput;
+    cin >> someInput;
     return EXIT_SUCCESS;
 }

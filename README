@@ -1,11 +1,21 @@
 Created using Visual Studio 2010 in conjuction with IntelOpenCL SDK
 
 This project is currently a basic, fairly optimized OpenCl implementation
-of a fully connected feed forward network. In addition, this project has a 
-partially implemented Convolutional Neural Network.
+of a fully connected feed forward network. In addition, this project has
+implemented a single layer convolutional neural network.
 
 Includes ability to store and load neural nets from files
 
-MNIST Data set:
+MNIST Data set (Error rates based on the 10k image testing set):
     One fully connected neural net of size 150-200-100-10 achieved an error rate of 3.23%
     Another one of size 800-500-250-10 has achieved an error rate of 2.3%
+    Another one of size 1500-1000-500-10 has achieved an error rate of 1.48% 
+        after training using simple affine distortions
+
+Added a demo of the neural networks under ./OpenCLNeuralNet/demo/
+    -demo1.py Single digit classification
+    -demo2.py Multiple digit classification
+    The neural network used by the demos is the file "NN-SMALL.net" in
+    the same directory as the demo files.
+
+    Required dependencies: Python Imaging Library (PIL) and Numpy

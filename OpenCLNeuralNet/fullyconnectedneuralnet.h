@@ -15,6 +15,7 @@ public:
     cl::Buffer inputBuffer;
     cl::Buffer outputBuffer;
     cl::Buffer targetBuffer;
+    int writeFileCounter;
     friend class NeuralNetwork;
 
     //If the input is a CNN or another network, we will need the pointer to the 
@@ -83,7 +84,6 @@ public:
         int* targetVector,
         cl::CommandQueue *queue);
 private:
-    int writeFileCounter;
     int lastLayerIndex;
     size_t sizeOfNet;
     size_t sizeOfInput;
