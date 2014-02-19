@@ -69,7 +69,6 @@ class Demo(Frame):
 
         self.c.bind("<B1-Motion>", self.mouseDownDrag)
         self.c.bind("<ButtonRelease-1>", self.mouseUp)
-        self.c.bind("kkk")
 
         self.queue = Queue.Queue()
         self.update_me()

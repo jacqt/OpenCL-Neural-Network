@@ -19,7 +19,6 @@ CTRLA = "'\\x01'"
 netName = "NN-SMALL.net"
 
 lock = thread.allocate_lock()
-alreadyWorking = thread.allocate_lock()
 
 image = Image.new("L", (imageWidth,imageHeight), white)
 draw = ImageDraw.Draw(image)
@@ -49,9 +48,6 @@ class Demo(Frame):
         clear = Button(buttonFrame, text = "Clear - CTRL+A", command = self.clearCanvas)
         clear.config(padx=10, pady=3, anchor=W)
         clear.pack(side=LEFT)
-        #test = Button(buttonFrame, text = "Test", command = testDigit)
-        #test.config(padx=10, pady=3, anchor = E)
-        #test.pack(side=LEFT)
 
         resultFrame = Frame(optionFrame, height = 250, width = 200,pady = 5, padx=5)
         resultFrame.pack(side=TOP, anchor=W)
@@ -101,8 +97,6 @@ class Demo(Frame):
             featureVec = map(norm,convert.getFeatureVecFromImg(image))
         except:
             return
-        if alreadyWorking.locked():
-            alreadyWorking.release()
 
         with lock:
             net.ClearNodes()
