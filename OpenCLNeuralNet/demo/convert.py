@@ -1,6 +1,6 @@
 #############################################################
-# Converts an Image into a 100 feature vector               #
-# i.e. scales it down to a 10x10 image                      #   
+# Converts an Image into a 28x28 feature vector             #
+# i.e. scales it down to a 28x28 image                      #   
 #############################################################
 
 import Image
